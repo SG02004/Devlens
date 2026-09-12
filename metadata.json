@@ -1,0 +1,6 @@
+{
+  "name": "DevLens — Technical Intelligence & Learning Platform",
+  "description": "AI-powered technical learning platform aggregating real-time engineering articles, intelligent topic classification, and structured developer learning paths.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
