@@ -40,18 +40,26 @@ DevLens is an **AI-powered technical learning platform & news intelligence aggre
 
 ## 3. Current State & Deliverables (As of September 23, 2026)
 
+### Live Production Deployment (Railway)
+- **Frontend Live URL:** [https://devlens-frontend-production.up.railway.app](https://devlens-frontend-production.up.railway.app)
+- **Backend Live URL:** [https://devlens-backend-production.up.railway.app](https://devlens-backend-production.up.railway.app)
+- **Interactive API Docs (Swagger):** [https://devlens-backend-production.up.railway.app/docs](https://devlens-backend-production.up.railway.app/docs)
+- **Live Health Endpoint:** [https://devlens-backend-production.up.railway.app/api/health](https://devlens-backend-production.up.railway.app/api/health)
+
 ### Backend (FastAPI + Python 3.13)
 - **Location:** `devlens-demo/backend/`
-- **Real JWT Auth (bcrypt):** Registration, login, profile (`/api/auth/me`), and topic preference updates (`/api/auth/preferences`).
+- **Real JWT Auth (Pure Bcrypt):** Native `bcrypt.hashpw` / `bcrypt.checkpw` replaces unmaintained `passlib`. Registration, login, profile (`/api/auth/me`), and topic preferences (`/api/auth/preferences`).
 - **PostgreSQL Database:** Connected to Supabase via `asyncpg` connection pooler.
-- **Article Pipeline:** Collects from 17 feeds; 109 articles currently indexed and scored (scores 0.84 – 0.95).
+- **Article Pipeline:** Collects from 17 feeds; 117+ articles currently indexed and scored (scores 0.84 – 0.95).
 - **Automated Background Sync (Approach A):** Runs via FastAPI `lifespan` 5 seconds after server boot and repeats every 12 hours automatically.
-- **Dynamic CORS:** Supports `CORS_ORIGINS` environment variable for cloud deployment.
+- **Dynamic CORS & Error Shield:** Supports `CORS_ORIGINS` with quote stripping + `allow_origin_regex=r"https://.*\.up\.railway\.app"`. Global 500 error handler always includes CORS headers to prevent browser masking.
 - **API Limits:** Endpoint `/api/articles` supports query `limit` up to 200 items.
 
 ### Frontend (React 19 + Vite + Tailwind CSS)
 - **Location:** `devlens-demo/frontend/`
-- **Initial Feed Load:** App fetches up to 150 articles on boot, ensuring all categories (e.g. Web Dev, DevOps, AI) have rich article pools in memory.
+- **Production Routing:** Global `window.fetch` interceptor (`main.jsx`) automatically routes all relative `/api/*` calls to the live Railway backend in production while keeping Vite's local dev proxy on localhost. Defensively normalizes URLs and auto-prepends `https://`.
+- **Cross-Platform Native Engine:** `@tailwindcss/oxide-linux-x64-gnu` pinned in primary `dependencies` with `frontend/nixpacks.toml` and `.npmrc` (`include=optional`) for seamless Linux builds.
+- **Initial Feed Load:** App fetches up to 150 articles on boot, ensuring rich category pools.
 - **Filter Controls:**
   - Explicit **"APPLY"** button (`btn-apply-filters`) and **"RESET"** button (`btn-reset-filters`).
   - Draft filter state separates user input selections from the active feed until "APPLY" is clicked.
@@ -64,7 +72,6 @@ DevLens is an **AI-powered technical learning platform & news intelligence aggre
 - **Sign Up / Sign In:**
   - Full Name placeholder: `"your name"`
   - Email placeholder: `"your gmail"` (Sign Up) / `"name@gmail.com or username"` (Sign In)
-- **Clean UI:** `+ NEW ARTICLE` manual button removed from feed view.
 - **Cover Image Generation:** Deterministic bitwise hashing of `article.id` mapped to curated Unsplash editorial tech photography (`imageUtils.js`). Fast, CDN-cached, 0 external API limits, 0 broken links.
 
 ---
@@ -72,7 +79,7 @@ DevLens is an **AI-powered technical learning platform & news intelligence aggre
 ## 4. Live Storage & Database Metrics (Supabase)
 
 Queried live from Supabase PostgreSQL:
-- **`articles` table (109 articles):** **248 KB** (includes summaries, takeaways, skills JSON, indexes).
+- **`articles` table (117+ articles):** **~264 KB** (includes summaries, takeaways, skills JSON, indexes).
 - **`users` table:** **128 KB**.
 - **All App Tables Combined:** **~1.8 MB**.
 - **Supabase Free Quota:** **500 MB**.
@@ -87,7 +94,7 @@ devlens-demo/
 ├── .gitignore                      ← Clean: ignores .env, node_modules, __pycache__, .venv
 ├── README.md
 ├── backend/
-│   ├── main.py                     ← App entry, lifespan, auto-sync worker, CORS
+│   ├── main.py                     ← App entry, lifespan, auto-sync worker, Railway CORS regex, global error handler
 │   ├── requirements.txt
 │   ├── railway.json                ← Railway deployment config (Nixpacks, uvicorn $PORT)
 │   ├── .env                        ← Secrets (DATABASE_URL, JWT_SECRET, GEMINI_API_KEY)
@@ -110,16 +117,18 @@ devlens-demo/
 │       │   └── article_views.py    ← Pydantic schemas for articles (ArticleResponse, FeedResponse)
 │       └── utils/
 │           ├── config.py           ← Settings from .env
-│           └── security.py         ← bcrypt password hashing, JWT creation/verification
+│           └── security.py         ← Native bcrypt password hashing, JWT creation/verification
 │
 ├── frontend/
-│   ├── package.json
+│   ├── package.json                ← With serve, direct oxide-linux-x64-gnu dependency
+│   ├── nixpacks.toml               ← Forces npm install --force on Railway
+│   ├── .npmrc                      ← include=optional for cross-platform binaries
 │   ├── vite.config.js              ← Port 3000, proxies /api -> http://127.0.0.1:8000
 │   ├── railway.json                ← Railway deployment config (build & serve dist)
 │   ├── .env.example                ← VITE_API_URL documentation
 │   └── src/
 │       ├── App.jsx                 ← App state, loads 150 articles, auth checks
-│       ├── main.jsx
+│       ├── main.jsx                ← App entry with production /api routing interceptor
 │       ├── index.css
 │       ├── components/
 │       │   ├── Header.jsx          ← Nav, cleanName formatting, user dropdown
@@ -170,40 +179,70 @@ devlens-demo/
    - `responseSchema` (forces exact JSON shape)
    - Grounding system prompt (*"Summarize ONLY based on provided text"*).
 5. **Deterministic Image Generation:** Curated Unsplash editorial collection mapped by domain and hashed by article ID. Fast CDN loading, 0 external API limits, 0 broken links.
+6. **Pure Bcrypt over Passlib:** Legacy `passlib 1.7.4` has a known breaking incompatibility with `bcrypt >= 4.1.0` in Linux container runtimes. Refactored to use standard `bcrypt.hashpw` and `bcrypt.checkpw` directly, ensuring zero-dependency compatibility and reliable authentication.
+7. **Transparent Dynamic CORS & Error Shield:** FastAPI's default 500 handler bypasses CORSMiddleware, which causes browsers to falsely report a "CORS error" whenever an unhandled exception occurs. Fixed by adding a global exception handler that always sets CORS headers, plus `allow_origin_regex=r"https://.*\.up\.railway\.app"` in FastAPI.
+8. **Universal Frontend API Normalizer:** Added an interceptor in `frontend/src/main.jsx` that dynamically routes `/api/*` to the deployed backend on Railway while retaining Vite proxy in local development, automatically sanitizing and prepending `https://` if omitted.
 
 ---
 
-## 8. Deployment Plan (Railway)
+## 8. Live Production Deployment on Railway
 
-### Step 1: Push latest commits to GitHub
-```bash
-git push origin main
-```
+Both services are deployed in a single Railway project from GitHub repo [`SG02004/Devlens`](https://github.com/SG02004/Devlens):
 
-### Step 2: Deploy Backend on Railway
-1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**.
-2. Select repo → set **Root Directory** to `backend`.
-3. Add Environment Variables:
-   - `DATABASE_URL` = (Supabase connection string from `.env`)
-   - `JWT_SECRET` = `devlens_jwt_secret_key_2026_super_secure`
-   - `GEMINI_API_KEY` = `<YOUR_GEMINI_API_KEY>`
-4. Copy generated Railway URL (e.g. `https://devlens-backend.up.railway.app`).
+### Live Endpoints
+| Service | Production Domain | Purpose |
+|---|---|---|
+| **Frontend** | `https://devlens-frontend-production.up.railway.app` | React 19 + Tailwind CSS Web Application |
+| **Backend** | `https://devlens-backend-production.up.railway.app` | FastAPI + Python 3.13 API Engine |
+| **API Docs** | `https://devlens-backend-production.up.railway.app/docs` | Interactive Swagger UI |
+| **Health Check** | `https://devlens-backend-production.up.railway.app/api/health` | Live Service & Database Health |
 
-### Step 3: Deploy Frontend on Railway
-1. In same project → **Add Service** → **GitHub repo** → Root Directory: `frontend`.
-2. Add Environment Variable:
-   - `VITE_API_URL` = `https://devlens-backend.up.railway.app`
-3. Copy generated Frontend URL (e.g. `https://devlens-frontend.up.railway.app`).
+### Exact Railway Environment Configuration
 
-### Step 4: Configure CORS
-In Backend Service variables, set:
-- `CORS_ORIGINS` = `https://devlens-frontend.up.railway.app`
+#### Backend Service (`devlens-backend`)
+- **Root Directory:** `backend`
+- **Variables:**
+  ```env
+  DATABASE_URL=postgresql://postgres.cvytceiytfpvmodsybqj:v%3F%246%29M%2FD6g%40uF%3Fs@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
+  JWT_SECRET=devlens_jwt_secret_key_2026_super_secure
+  GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
+  PORT=8000
+  CORS_ORIGINS=https://devlens-frontend-production.up.railway.app
+  ```
+
+#### Frontend Service (`devlens-frontend`)
+- **Root Directory:** `frontend`
+- **Variables:**
+  ```env
+  VITE_API_URL=https://devlens-backend-production.up.railway.app
+  PORT=3000
+  ```
+
+### Key Deployment Troubleshooting Lessons Learned
+
+1. **Native Rust TailWind v4 Bindings (`@tailwindcss/oxide`):**
+   - *Problem:* Developing on Windows locked only `oxide-win32-x64-msvc`. When Railway built on Linux under `NODE_ENV=production`, `npm ci` skipped optional dependencies, throwing `Error: Cannot find native binding`.
+   - *Solution:* Pinned `@tailwindcss/oxide-linux-x64-gnu` directly in `package.json` `"dependencies"`, configured `frontend/.npmrc` with `include=optional`, and added `frontend/nixpacks.toml` with `cmds = ["npm install --force"]`.
+2. **Missing `https://` in `VITE_API_URL`:**
+   - *Problem:* Setting `VITE_API_URL="devlens-backend-production.up.railway.app"` without `https://` caused browsers to treat the backend domain as a relative subfolder on the frontend domain (`https://frontend/backend/api/...`), returning 404.
+   - *Solution:* Implemented `normalizeApiUrl` in `main.jsx` and `apiClient.js` that automatically prepends `https://` and strips trailing slashes defensively.
+3. **Misleading CORS Error on 500 Responses:**
+   - *Problem:* Chrome logged `Blocked by CORS policy: No 'Access-Control-Allow-Origin' header` when calling `/api/auth/signup`. The actual error was a 500 crash inside `passlib`.
+   - *Solution:* Replaced `passlib` with direct `bcrypt` calls, and added a global FastAPI exception handler in `backend/main.py` that guarantees CORS headers on all 500 responses.
 
 ---
 
 ## 9. Recent Git Commits
 
-- `b2f5ae4` — fix: remove New Article button, add Railway configs, fix CORS for deployment
-- `5c0e3b8` — feat: add automatic background article sync on startup and 12-hour schedule
-- `9412173` — fix(ui): update signup placeholders to 'your name' and 'your gmail'
-- `151c9f0` — feat(ui): add Apply filter button, 15-article pagination with animated Load More, remove 3-month option, fix web-dev pool
+- `2c7e7e1` — fix(backend): switch to pure bcrypt and attach CORS headers to global 500 error handler
+- `6be338e` — fix(frontend): auto-prefix https:// on API_BASE URL to prevent relative path routing
+- `eec42bd` — fix(frontend): add oxide-linux-x64-gnu to dependencies and force npm install in nixpacks
+- `c3747cd` — fix: route relative api calls to production backend and enable railway CORS regex
+- `966a4a4` — fix(frontend): add Linux oxide optionalDependencies for cross-platform Railway build
+- `1be038b` — chore(frontend): add serve dependency and start script for Railway deployment
+- `ebac9cf` — docs: update full project context with latest filter, auto-sync, and storage metrics
+- `5158ab9` — feat(ui): add Apply filter button, 15-article pagination with animated Load More, remove 3-month option, fix web-dev pool
+- `1cb17a1` — fix(ui): update signup placeholders to 'your name' and 'your gmail'
+- `48eb7ea` — feat: add automatic background article sync on startup and 12-hour schedule
+- `4ad14a8` — fix: remove New Article button, add Railway configs, fix CORS for deployment
+
