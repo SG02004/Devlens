@@ -9,5 +9,6 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "DevLens Backend API",
-        "version": "1.0.0",
+        "version": "1.0.1",
+        "auth_engine": "pure-bcrypt",
     }

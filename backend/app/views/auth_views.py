@@ -46,6 +46,10 @@ class RegisterRequest(BaseModel):
     def validate_password_strength(cls, v: str) -> str:
         if len(v.strip()) < 8:
             raise ValueError("Password must be at least 8 characters long.")
+        # bcrypt rejects passwords longer than 72 bytes with an exception.
+        # Convert that into a normal validation response instead of a 500.
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password must be 72 bytes or fewer.")
         return v
 
     def get_categories(self) -> List[str]:
@@ -106,3 +110,27 @@ class PreferencesUpdateRequest(BaseModel):
 
     def get_categories(self) -> List[str]:
         return self.selectedCategories or self.selected_categories or []
+
+
+class ProfileUpdateRequest(BaseModel):
+    """The editable, non-authentication fields on a user's profile."""
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    email: Optional[str] = None
+    institution: Optional[str] = Field(default=None, max_length=150)
+    program: Optional[str] = Field(default=None, max_length=100)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email_format(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        clean = v.strip().lower()
+        if not EMAIL_REGEX.match(clean):
+            raise ValueError("Please provide a valid email with a domain (e.g. user@gmail.com).")
+        return clean
+
+    @field_validator("name", "institution", "program")
+    @classmethod
+    def trim_text(cls, v: Optional[str]) -> Optional[str]:
+        return v.strip() if v is not None else None

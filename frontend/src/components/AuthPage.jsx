@@ -21,12 +21,12 @@ export const AuthPage = ({
     e.preventDefault();
     setErrorMessage(null);
 
-    const targetEmail = email.trim();
-    if (!targetEmail) {
-      setErrorMessage("Please enter your email address.");
+    const identifier = email.trim();
+    if (!identifier) {
+      setErrorMessage("Please enter your email address or username.");
       return;
     }
-    if (!EMAIL_REGEX.test(targetEmail)) {
+    if (identifier.includes("@") && !EMAIL_REGEX.test(identifier)) {
       setErrorMessage("Please enter a valid email address (e.g. name@gmail.com).");
       return;
     }
@@ -41,7 +41,7 @@ export const AuthPage = ({
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: targetEmail, password }),
+        body: JSON.stringify({ username: identifier, password }),
       });
 
       if (res.ok) {
@@ -52,7 +52,7 @@ export const AuthPage = ({
         }
         onLoginSuccess({
           name: data.user?.name || "Developer",
-          email: targetEmail,
+          email: data.user?.email || identifier,
           selectedCategories: data.user?.selectedCategories || data.user?.selected_categories || [],
         });
       } else {
@@ -252,6 +252,7 @@ export const AuthPage = ({
                 id="input-password"
                 type={showPassword ? "text" : "password"}
                 required
+                maxLength={72}
                 placeholder="•••••••• (min 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

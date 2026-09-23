@@ -162,9 +162,13 @@ export default function App() {
 
   // Profile Update
   const handleUpdateProfile = async (updated) => {
+    const token = localStorage.getItem("devlens.auth_token");
     const res = await fetch("/api/auth/profile", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(updated),
     });
     if (!res.ok) {

@@ -94,17 +94,22 @@ async def global_exception_handler(request, exc: Exception):
     import traceback
     print(f"[DevLens Error] {request.method} {request.url.path}: {exc}")
     traceback.print_exc()
-    origin = request.headers.get("origin", "*")
+    origin = request.headers.get("origin", "")
+    headers = {
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Methods": "*",
+    }
+    if origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    else:
+        headers["Access-Control-Allow-Origin"] = "*"
+
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
         content={"detail": f"Server error: {str(exc)}"},
-        headers={
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Allow-Methods": "*",
-        },
+        headers=headers,
     )
 
 # Register MVC Routers

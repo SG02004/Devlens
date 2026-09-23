@@ -48,7 +48,7 @@ DevLens is an **AI-powered technical learning platform & news intelligence aggre
 
 ### Backend (FastAPI + Python 3.13)
 - **Location:** `devlens-demo/backend/`
-- **Real JWT Auth (Pure Bcrypt):** Native `bcrypt.hashpw` / `bcrypt.checkpw` replaces unmaintained `passlib`. Registration, login, profile (`/api/auth/me`), and topic preferences (`/api/auth/preferences`).
+- **Real JWT Auth (Pure Bcrypt):** Native `bcrypt.hashpw` / `bcrypt.checkpw` replaces unmaintained `passlib`. Registration, login (email or username), profile read/update (`GET`/`PUT /api/auth/profile`), and topic preferences (`/api/auth/preferences`).
 - **PostgreSQL Database:** Connected to Supabase via `asyncpg` connection pooler.
 - **Article Pipeline:** Collects from 17 feeds; 117+ articles currently indexed and scored (scores 0.84 – 0.95).
 - **Automated Background Sync (Approach A):** Runs via FastAPI `lifespan` 5 seconds after server boot and repeats every 12 hours automatically.
@@ -101,7 +101,7 @@ devlens-demo/
 │   ├── .env.example
 │   └── app/
 │       ├── controllers/
-│       │   ├── auth_controller.py  ← /api/auth/* (register, login, me, preferences)
+│       │   ├── auth_controller.py  ← /api/auth/* (register, login, profile read/update, preferences)
 │       │   ├── article_controller.py ← /api/articles/* (feed, sync, execute_article_sync)
 │       │   └── health_controller.py  ← /api/health
 │       ├── models/
