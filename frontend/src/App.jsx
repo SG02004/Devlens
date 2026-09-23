@@ -279,10 +279,6 @@ export default function App() {
             onToggleRead={handleToggleRead}
             onToggleBookmark={handleToggleBookmark}
             onTakeQuiz={() => setActiveTab("quiz")}
-            onCreateArticle={() => {
-              setEditingArticle(null);
-              setIsArticleFormOpen(true);
-            }}
           />
         ) : activeTab === "profile" ? (
           <ProfileSection
