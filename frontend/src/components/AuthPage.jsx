@@ -221,7 +221,7 @@ export const AuthPage = ({
                   id="input-name"
                   type="text"
                   required
-                  placeholder="e.g. Saurabh Goswami"
+                  placeholder="your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input-underlined"
@@ -235,9 +235,9 @@ export const AuthPage = ({
               </label>
               <input
                 id="input-email"
-                type="email"
+                type={mode === "signup" ? "email" : "text"}
                 required
-                placeholder="name@gmail.com or college email"
+                placeholder={mode === "signup" ? "your gmail" : "name@gmail.com or username"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-underlined"
