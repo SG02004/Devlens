@@ -70,7 +70,7 @@ app = FastAPI(
 # On Railway, set CORS_ORIGINS=https://your-frontend.up.railway.app
 # Locally, falls back to standard dev ports.
 _env_origins = os.getenv("CORS_ORIGINS", "")
-_extra_origins = [o.strip() for o in _env_origins.split(",") if o.strip()]
+_extra_origins = [o.strip().strip('"').strip("'") for o in _env_origins.split(",") if o.strip()]
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -88,6 +88,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception):
+    import traceback
+    print(f"[DevLens Error] {request.method} {request.url.path}: {exc}")
+    traceback.print_exc()
+    origin = request.headers.get("origin", "*")
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Server error: {str(exc)}"},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Methods": "*",
+        },
+    )
+
 # Register MVC Routers
 app.include_router(health_router)
 app.include_router(auth_router)
@@ -101,3 +120,4 @@ async def root():
         "docs": "/docs",
         "health": "/api/health",
     }
+
