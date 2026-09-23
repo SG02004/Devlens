@@ -1,0 +1,296 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  --bg: #111113;
+  --bg-surface: #17171a;
+  --bg-elevated: #202024;
+  --ink: #F8F7F4;
+  --ink-muted: #9E9D99;
+  --accent: #FFD700;
+  --accent-muted: rgba(255, 215, 0, 0.1);
+  --border: rgba(248, 247, 244, 0.85);
+  --border-dim: rgba(248, 247, 244, 0.2);
+  --top-nav-bg: rgba(17, 17, 19, 0.95);
+  --modal-backdrop-bg: rgba(17, 17, 19, 0.88);
+  --font-display: "Syne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="light"], .light {
+  --bg: #F5F4F0;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #ECEAE4;
+  --ink: #111113;
+  --ink-muted: #63625D;
+  --accent: #B8860B;
+  --accent-muted: rgba(184, 134, 11, 0.12);
+  --border: rgba(17, 17, 19, 0.85);
+  --border-dim: rgba(17, 17, 19, 0.18);
+  --top-nav-bg: rgba(245, 244, 240, 0.95);
+  --modal-backdrop-bg: rgba(17, 17, 19, 0.55);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+select option {
+  background-color: var(--bg-surface);
+  color: var(--ink);
+}
+
+input, select, textarea {
+  color-scheme: light dark;
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  color-scheme: light;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  color-scheme: dark;
+}
+
+/* Typography styles matching Variation 1 */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.font-mono-custom {
+  font-family: var(--font-mono);
+}
+
+/* Card & Borders */
+.card {
+  border: 2px solid var(--ink);
+  background-color: var(--bg-surface);
+  color: var(--ink);
+}
+
+.card-dim {
+  border: 1px solid var(--border-dim);
+  background-color: var(--bg-surface);
+  color: var(--ink);
+}
+
+.card-dim:hover {
+  border-color: var(--accent);
+}
+
+/* Meta Tag from spec */
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.meta-tag-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: var(--accent-muted);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  width: fit-content;
+}
+
+/* Inputs with under-borders per Variation 1 */
+.input-underlined {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ink);
+  padding: 0.6rem 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input-underlined:focus {
+  border-bottom-color: var(--accent);
+}
+
+.input-underlined::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.7;
+}
+
+/* Buttons */
+.btn-primary {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: var(--ink);
+  color: var(--bg);
+  border: 2px solid var(--ink);
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #111113;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Navigation Bar */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 2px solid var(--ink);
+  background: var(--top-nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-tab:hover {
+  color: var(--ink);
+  border-color: var(--border-dim);
+}
+
+.nav-tab-active {
+  color: var(--bg);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  background: var(--modal-backdrop-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.modal-card {
+  max-width: 820px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  border: 2px solid var(--ink);
+  background: var(--bg-surface);
+  margin: auto;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none; /* Reset transform so descendants can use position: fixed without bugs */
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-dim);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink);
+}
