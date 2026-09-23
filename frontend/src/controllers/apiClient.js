@@ -7,8 +7,17 @@
  *   - Railway:   set to https://your-backend.up.railway.app → absolute calls to prod backend
  */
 
+function normalizeApiUrl(url) {
+  if (!url) return '';
+  let cleaned = url.trim().replace(/\/+$/, '');
+  if (cleaned && !cleaned.startsWith('http://') && !cleaned.startsWith('https://')) {
+    cleaned = `https://${cleaned}`;
+  }
+  return cleaned;
+}
+
 const TOKEN_KEY = "devlens.auth_token";
-const BASE_URL = import.meta.env.VITE_API_URL || "";
+const BASE_URL = normalizeApiUrl(import.meta.env.VITE_API_URL || "");
 
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
