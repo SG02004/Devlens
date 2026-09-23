@@ -81,16 +81,15 @@ async def get_article_by_id(
     return ArticleResponse.from_orm_article(article)
 
 
-@router.post("/sync", response_model=SyncResponse)
-async def sync_articles(
-    category: Optional[str] = Query(None, description="Sync specific category or all"),
-    limit_per_source: int = Query(4, ge=1, le=10),
-    db: AsyncSession = Depends(get_db),
-):
+async def execute_article_sync(
+    db: AsyncSession,
+    category: Optional[str] = None,
+    limit_per_source: int = 4,
+) -> SyncResponse:
     """
-    Triggers on-demand article collection from Dev.to and high-signal RSS feeds.
-    Enforces quality filtering and caps ingestion at MAX_ARTICLES_PER_DAY (15)
-    per category per day (or fewer if fewer qualify). Deduplicates via SHA-256 url_hash.
+    Executes the article sync pipeline:
+    Fetches candidates, scores quality, enforces 15/day quota, deduplicates, and saves.
+    Callable both from API endpoints and background schedulers.
     """
     categories_to_sync = [category] if category else list(CATEGORY_FEEDS.keys())
     total_fetched = 0
@@ -180,4 +179,18 @@ async def sync_articles(
         articles_added=total_added,
         errors=errors,
     )
+
+
+@router.post("/sync", response_model=SyncResponse)
+async def sync_articles(
+    category: Optional[str] = Query(None, description="Sync specific category or all"),
+    limit_per_source: int = Query(4, ge=1, le=10),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Triggers on-demand article collection from Dev.to and high-signal RSS feeds.
+    Enforces quality filtering and caps ingestion at MAX_ARTICLES_PER_DAY (15)
+    per category per day (or fewer if fewer qualify). Deduplicates via SHA-256 url_hash.
+    """
+    return await execute_article_sync(db=db, category=category, limit_per_source=limit_per_source)
 
