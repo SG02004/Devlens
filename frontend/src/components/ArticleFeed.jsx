@@ -7,7 +7,10 @@ import {
   Clock,
   ArrowUpRight,
   X,
-  Plus
+  Plus,
+  Filter,
+  Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { ArticleCard } from "./ArticleCard";
 import { DailyGoalWidget } from "./DailyGoalWidget";
@@ -17,7 +20,7 @@ import { getArticleCoverImage } from "../utils/imageUtils";
 const STORAGE_DAILY_GOAL = "devlens.dailyGoal";
 
 export const ArticleFeed = ({
-  articles,
+  articles = [],
   isLoading = false,
   userProfile,
   onOpenArticle,
@@ -26,11 +29,22 @@ export const ArticleFeed = ({
   onTakeQuiz,
   onCreateArticle,
 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedContentType, setSelectedContentType] = useState("All");
-  const [selectedTimeRange, setSelectedTimeRange] = useState(30);
+  // Draft filter state (controlled by form inputs before clicking "APPLY")
+  const [draftCategory, setDraftCategory] = useState("all");
+  const [draftContentType, setDraftContentType] = useState("All");
+  const [draftTimeRange, setDraftTimeRange] = useState(0); // 0 = ALL TIME
+  const [draftSearchQuery, setDraftSearchQuery] = useState("");
+
+  // Applied filter state (drives the active filtered article list)
+  const [appliedCategory, setAppliedCategory] = useState("all");
+  const [appliedContentType, setAppliedContentType] = useState("All");
+  const [appliedTimeRange, setAppliedTimeRange] = useState(0);
+  const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
   const [onlyBookmarks, setOnlyBookmarks] = useState(false);
+
+  // Pagination / Load More state (show 15 articles initially)
+  const [visibleCount, setVisibleCount] = useState(15);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Daily goal state
   const [dailyGoal, setDailyGoal] = useState(() => {
@@ -51,7 +65,7 @@ export const ArticleFeed = ({
     }
   };
 
-  // User's formatted display name (proper title case and space cleanup)
+  // User's formatted display name
   const cleanName = useMemo(() => {
     const raw = userProfile?.name || "Senior Developer";
     return raw
@@ -71,26 +85,59 @@ export const ArticleFeed = ({
     return CATEGORIES_CONFIG.filter((c) => selected.includes(c.id));
   }, [userProfile?.selectedCategories]);
 
-  // Reset selectedCategory to "all" if current selection is no longer in user's subscribed topics
+  // Reset category to "all" if current selection is no longer in user's subscribed topics
   useEffect(() => {
-    if (selectedCategory !== "all" && userCategories.length > 0) {
-      if (!userCategories.some((c) => c.id === selectedCategory)) {
-        setSelectedCategory("all");
+    if (appliedCategory !== "all" && userCategories.length > 0) {
+      if (!userCategories.some((c) => c.id === appliedCategory)) {
+        setAppliedCategory("all");
+        setDraftCategory("all");
       }
     }
-  }, [userCategories, selectedCategory]);
+  }, [userCategories, appliedCategory]);
 
   // Today's read articles
   const todayReadCount = useMemo(() => {
     return articles.filter((a) => a.isRead).length;
   }, [articles]);
 
-  // Filtered articles
+  // Apply filters action
+  const handleApplyFilters = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setAppliedCategory(draftCategory);
+    setAppliedContentType(draftContentType);
+    setAppliedTimeRange(draftTimeRange);
+    setAppliedSearchQuery(draftSearchQuery);
+    setVisibleCount(15);
+  };
+
+  // Reset filters action
+  const handleResetFilters = () => {
+    setDraftCategory("all");
+    setDraftContentType("All");
+    setDraftTimeRange(0);
+    setDraftSearchQuery("");
+    setAppliedCategory("all");
+    setAppliedContentType("All");
+    setAppliedTimeRange(0);
+    setAppliedSearchQuery("");
+    setOnlyBookmarks(false);
+    setVisibleCount(15);
+  };
+
+  // Quick Topic Pills: instant category jump
+  const handleQuickTopicClick = (catId) => {
+    const nextCategory = appliedCategory === catId ? "all" : catId;
+    setDraftCategory(nextCategory);
+    setAppliedCategory(nextCategory);
+    setVisibleCount(15);
+  };
+
+  // Filtered articles list
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
       // Category filter: match chosen category or limit to user-subscribed topics when 'all'
-      if (selectedCategory !== "all") {
-        if (art.category !== selectedCategory) {
+      if (appliedCategory !== "all") {
+        if (art.category !== appliedCategory) {
           return false;
         }
       } else if (userCategories.length > 0) {
@@ -98,24 +145,28 @@ export const ArticleFeed = ({
           return false;
         }
       }
+
       // Content Type filter
-      if (selectedContentType !== "All") {
-        if (selectedContentType === "News" && art.source === "arXiv") return false;
-        if (selectedContentType === "Blogs" && (art.source === "arXiv" || art.source === "Hacker News")) return false;
+      if (appliedContentType !== "All") {
+        if (appliedContentType === "News" && art.source === "arXiv") return false;
+        if (appliedContentType === "Blogs" && (art.source === "arXiv" || art.source === "Hacker News")) return false;
       }
-      // Time range filter
-      if (selectedTimeRange > 0) {
-        const publishedTime = new Date(art.publishedAt).getTime();
-        const cutoff = Date.now() - selectedTimeRange * 24 * 60 * 60 * 1000;
+
+      // Time range filter (0 = All time)
+      if (appliedTimeRange > 0) {
+        const publishedTime = new Date(art.publishedAt || art.published_at || art.created_at).getTime();
+        const cutoff = Date.now() - appliedTimeRange * 24 * 60 * 60 * 1000;
         if (publishedTime < cutoff) return false;
       }
+
       // Bookmark filter
       if (onlyBookmarks && !art.isBookmarked) {
         return false;
       }
+
       // Search query
-      if (searchQuery.trim() !== "") {
-        const q = searchQuery.toLowerCase();
+      if (appliedSearchQuery.trim() !== "") {
+        const q = appliedSearchQuery.toLowerCase();
         const matchesTitle = art.title?.toLowerCase().includes(q);
         const matchesSummary = art.summary?.toLowerCase().includes(q);
         const matchesAuthor = art.author?.toLowerCase().includes(q);
@@ -126,19 +177,45 @@ export const ArticleFeed = ({
       }
       return true;
     });
-  }, [articles, selectedCategory, userCategories, selectedContentType, selectedTimeRange, onlyBookmarks, searchQuery]);
+  }, [
+    articles,
+    appliedCategory,
+    userCategories,
+    appliedContentType,
+    appliedTimeRange,
+    onlyBookmarks,
+    appliedSearchQuery,
+  ]);
 
   // Featured article (first unread or first overall)
   const featuredArticle = useMemo(() => {
-    if (onlyBookmarks || searchQuery.trim() !== "") return null;
+    if (onlyBookmarks || appliedSearchQuery.trim() !== "") return null;
     return filteredArticles.find((a) => !a.isRead) || filteredArticles[0] || null;
-  }, [filteredArticles, onlyBookmarks, searchQuery]);
+  }, [filteredArticles, onlyBookmarks, appliedSearchQuery]);
 
   // Secondary articles (excluding featured)
   const secondaryArticles = useMemo(() => {
     if (!featuredArticle) return filteredArticles;
     return filteredArticles.filter((a) => a.id !== featuredArticle.id);
   }, [filteredArticles, featuredArticle]);
+
+  // Sliced articles for display (15 items initially, loaded in increments of 15)
+  const displayedSecondary = useMemo(() => {
+    const secondaryLimit = Math.max(0, visibleCount - (featuredArticle ? 1 : 0));
+    return secondaryArticles.slice(0, secondaryLimit);
+  }, [secondaryArticles, visibleCount, featuredArticle]);
+
+  const totalDisplayed = (featuredArticle ? 1 : 0) + displayedSecondary.length;
+  const hasMore = totalDisplayed < filteredArticles.length;
+
+  // Handle Load More with smooth animated loading effect
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    setTimeout(() => {
+      setVisibleCount((prev) => prev + 15);
+      setIsLoadingMore(false);
+    }, 450);
+  };
 
   const handleOpenArticle = (article) => {
     if (onOpenArticle) {
@@ -179,15 +256,15 @@ export const ArticleFeed = ({
           </div>
         </div>
 
-        {/* Quick Category Jump Pills - filtered strictly by user subscribed categories */}
+        {/* Quick Category Jump Pills */}
         <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-[var(--border-dim)] font-mono">
           <span className="text-[10px] font-bold tracking-widest text-[var(--ink-muted)] uppercase mr-1">
             TOPICS:
           </span>
           <button
-            onClick={() => setSelectedCategory("all")}
+            onClick={() => handleQuickTopicClick("all")}
             className={`text-xs font-bold uppercase px-3 py-1 border transition-all cursor-pointer ${
-              selectedCategory === "all"
+              appliedCategory === "all"
                 ? "bg-[var(--ink)] text-[var(--bg)] border-[var(--ink)]"
                 : "border-[var(--border-dim)] text-[var(--ink-muted)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
             }`}
@@ -197,9 +274,9 @@ export const ArticleFeed = ({
           {userCategories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(selectedCategory === cat.id ? "all" : cat.id)}
+              onClick={() => handleQuickTopicClick(cat.id)}
               className={`text-xs font-bold uppercase px-3 py-1 border transition-all cursor-pointer ${
-                selectedCategory === cat.id
+                appliedCategory === cat.id
                   ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)]"
                   : "border-[var(--border-dim)] text-[var(--ink-muted)] hover:border-[var(--ink)] hover:text-[var(--ink)]"
               }`}
@@ -210,114 +287,140 @@ export const ArticleFeed = ({
         </div>
       </header>
 
-      {/* 2. Filter Bar & Daily Goal Tracker */}
+      {/* 2. Filter Bar with Apply Button & Daily Goal Tracker */}
       <section className="card p-6 sm:p-8 border-2 border-[var(--ink)] bg-[var(--bg-surface)] space-y-6 shadow-sm">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-center">
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
-            {/* Category */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
-                CATEGORY
-              </label>
-              <select
-                id="select-filter-category"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
-              >
-                <option value="all">ALL SUBSCRIBED ({userCategories.length})</option>
-                {userCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.label.toUpperCase()}
-                  </option>
-                ))}
-              </select>
+        <form onSubmit={handleApplyFilters} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 items-center">
+            {/* Filter Dropdowns */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono">
+              {/* Category */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
+                  CATEGORY
+                </label>
+                <select
+                  id="select-filter-category"
+                  value={draftCategory}
+                  onChange={(e) => setDraftCategory(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
+                >
+                  <option value="all">ALL SUBSCRIBED ({userCategories.length})</option>
+                  {userCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.label.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Content Type */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
+                  FORMAT
+                </label>
+                <select
+                  id="select-filter-content-type"
+                  value={draftContentType}
+                  onChange={(e) => setDraftContentType(e.target.value)}
+                  className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
+                >
+                  <option value="All">ALL FORMATS</option>
+                  <option value="News">NEWS & SYSTEMS</option>
+                  <option value="Blogs">BLOGS & PAPERS</option>
+                </select>
+              </div>
+
+              {/* Time Range (Removed "LAST 3 MONTHS" option) */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
+                  TIME HORIZON
+                </label>
+                <select
+                  id="select-filter-time-range"
+                  value={draftTimeRange}
+                  onChange={(e) => setDraftTimeRange(Number(e.target.value))}
+                  className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
+                >
+                  <option value={0}>ALL TIME</option>
+                  <option value={1}>LAST 24 HOURS</option>
+                  <option value={7}>LAST 7 DAYS</option>
+                  <option value={30}>LAST 30 DAYS</option>
+                </select>
+              </div>
             </div>
 
-            {/* Content Type */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
-                FORMAT
-              </label>
-              <select
-                id="select-filter-content-type"
-                value={selectedContentType}
-                onChange={(e) => setSelectedContentType(e.target.value)}
-                className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
-              >
-                <option value="All">ALL FORMATS</option>
-                <option value="News">NEWS & SYSTEMS</option>
-                <option value="Blogs">BLOGS & PAPERS</option>
-              </select>
-            </div>
-
-            {/* Time Range */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1.5">
-                TIME HORIZON
-              </label>
-              <select
-                id="select-filter-time-range"
-                value={selectedTimeRange}
-                onChange={(e) => setSelectedTimeRange(Number(e.target.value))}
-                className="w-full bg-[var(--bg)] border border-[var(--ink)] text-xs text-[var(--ink)] px-3 py-2.5 focus:border-[var(--accent)] outline-none font-mono"
-              >
-                <option value={1}>LAST 24 HOURS</option>
-                <option value={7}>LAST 7 DAYS</option>
-                <option value={30}>LAST 30 DAYS</option>
-                <option value={90}>LAST 3 MONTHS</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Daily Goal Widget */}
-          <DailyGoalWidget
-            todayReadCount={todayReadCount}
-            dailyGoal={dailyGoal}
-            onGoalChange={handleGoalChange}
-          />
-        </div>
-
-        {/* Search and Bookmark Filter */}
-        <div className="pt-4 border-t border-[var(--border-dim)] flex flex-col sm:flex-row items-center gap-3 font-mono">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-muted)]" />
-            <input
-              id="input-search-feed"
-              type="text"
-              placeholder="SEARCH BY TITLE, TOPIC, KEYWORD (E.G. KAFKA, LLM)..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg)] border border-[var(--ink)] pl-10 pr-10 py-2.5 text-xs text-[var(--ink)] placeholder-[var(--ink-muted)]/60 focus:border-[var(--accent)] outline-none font-mono"
+            {/* Daily Goal Widget */}
+            <DailyGoalWidget
+              todayReadCount={todayReadCount}
+              dailyGoal={dailyGoal}
+              onGoalChange={handleGoalChange}
             />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] hover:text-[var(--ink)] cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
           </div>
 
-          <button
-            type="button"
-            onClick={() => setOnlyBookmarks(!onlyBookmarks)}
-            className={`px-4 py-2.5 border text-xs font-bold uppercase transition-all flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center cursor-pointer ${
-              onlyBookmarks
-                ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)]"
-                : "border-[var(--ink)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            }`}
-          >
-            <Bookmark className={`w-3.5 h-3.5 ${onlyBookmarks ? "fill-current" : ""}`} />
-            <span>SAVED PAPERS ({articles.filter((a) => a.isBookmarked).length})</span>
-          </button>
-        </div>
+          {/* Search, Apply and Bookmark Filter Bar */}
+          <div className="pt-4 border-t border-[var(--border-dim)] flex flex-col md:flex-row items-center gap-3 font-mono">
+            {/* Search Input */}
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--ink-muted)]" />
+              <input
+                id="input-search-feed"
+                type="text"
+                placeholder="SEARCH BY TITLE, TOPIC, KEYWORD (E.G. KAFKA, LLM)..."
+                value={draftSearchQuery}
+                onChange={(e) => setDraftSearchQuery(e.target.value)}
+                className="w-full bg-[var(--bg)] border border-[var(--ink)] pl-10 pr-10 py-2.5 text-xs text-[var(--ink)] placeholder-[var(--ink-muted)]/60 focus:border-[var(--accent)] outline-none font-mono"
+              />
+              {draftSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setDraftSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--ink-muted)] hover:text-[var(--ink)] cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* APPLY Button */}
+            <button
+              id="btn-apply-filters"
+              type="submit"
+              className="px-6 py-2.5 border-2 border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto cursor-pointer shadow-sm tracking-wider"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>APPLY</span>
+            </button>
+
+            {/* RESET Button */}
+            <button
+              id="btn-reset-filters"
+              type="button"
+              onClick={handleResetFilters}
+              title="Reset all filters"
+              className="px-3.5 py-2.5 border border-[var(--border-dim)] text-[var(--ink-muted)] hover:text-[var(--ink)] hover:border-[var(--ink)] text-xs font-bold uppercase transition-all flex items-center justify-center gap-1.5 shrink-0 w-full sm:w-auto cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>RESET</span>
+            </button>
+
+            {/* Saved Papers Toggle */}
+            <button
+              type="button"
+              onClick={() => setOnlyBookmarks(!onlyBookmarks)}
+              className={`px-4 py-2.5 border text-xs font-bold uppercase transition-all flex items-center gap-2 shrink-0 w-full sm:w-auto justify-center cursor-pointer ${
+                onlyBookmarks
+                  ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)]"
+                  : "border-[var(--ink)] text-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${onlyBookmarks ? "fill-current" : ""}`} />
+              <span>SAVED ({articles.filter((a) => a.isBookmarked).length})</span>
+            </button>
+          </div>
+        </form>
       </section>
 
-      {/* 3. Featured Story / Skeleton */}
+      {/* 3. Featured Story / Initial Loading Skeleton */}
       {isLoading ? (
         <section className="card border-2 border-[var(--border-dim)] bg-[var(--bg-surface)] overflow-hidden shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] items-stretch">
@@ -401,8 +504,8 @@ export const ArticleFeed = ({
         </section>
       ) : null}
 
-      {/* 4. Recommended Articles Grid */}
-      <section id="recommended-articles-section" className="space-y-4">
+      {/* 4. Recommended Articles Grid & Load More */}
+      <section id="recommended-articles-section" className="space-y-6">
         <div className="flex items-center justify-between border-b-2 border-[var(--border-dim)] pb-3 font-mono">
           <div>
             <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
@@ -413,7 +516,9 @@ export const ArticleFeed = ({
             </p>
           </div>
           <span className="text-xs font-bold text-[var(--accent)]">
-            {isLoading ? "[FETCHING...]" : `[${secondaryArticles.length + (featuredArticle ? 1 : 0)} ARTICLES]`}
+            {isLoading
+              ? "[FETCHING...]"
+              : `[SHOWING ${totalDisplayed} OF ${filteredArticles.length} ARTICLES]`}
           </span>
         </div>
 
@@ -457,30 +562,68 @@ export const ArticleFeed = ({
             </p>
             <button
               type="button"
-              onClick={() => {
-                setSelectedCategory("all");
-                setSelectedContentType("All");
-                setSearchQuery("");
-                setOnlyBookmarks(false);
-              }}
+              onClick={handleResetFilters}
               className="btn-primary mt-6 max-w-xs mx-auto text-xs"
             >
               RESET FILTERS
             </button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {secondaryArticles.map((article) => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                onOpenArticle={handleOpenArticle}
-                onToggleRead={onToggleRead}
-                onToggleBookmark={onToggleBookmark}
-                onTakeQuiz={onTakeQuiz}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {displayedSecondary.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  onOpenArticle={handleOpenArticle}
+                  onToggleRead={onToggleRead}
+                  onToggleBookmark={onToggleBookmark}
+                  onTakeQuiz={onTakeQuiz}
+                />
+              ))}
+            </div>
+
+            {/* Skeleton loading cards while fetching next batch */}
+            {isLoadingMore && (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mt-6 animate-fade-in">
+                {[1, 2, 3].map((idx) => (
+                  <div
+                    key={`loading-more-${idx}`}
+                    className="card border-2 border-[var(--border-dim)] bg-[var(--bg-surface)] p-5 space-y-4 animate-pulse shadow-sm"
+                  >
+                    <div className="h-44 bg-[var(--border-dim)]/40 w-full rounded" />
+                    <div className="h-4 bg-[var(--border-dim)]/60 w-3/4 rounded" />
+                    <div className="h-3 bg-[var(--border-dim)]/40 w-full rounded" />
+                    <div className="h-3 bg-[var(--border-dim)]/30 w-5/6 rounded" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="flex justify-center pt-8 pb-4 font-mono">
+                <button
+                  id="btn-feed-load-more"
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={isLoadingMore}
+                  className="border-2 border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-8 py-3.5 text-xs font-bold font-mono tracking-widest uppercase transition-all flex items-center gap-3 cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+                      <span>LOADING ARTICLES...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>LOAD MORE ARTICLES ({totalDisplayed} of {filteredArticles.length})</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>

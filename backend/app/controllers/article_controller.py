@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/articles", tags=["Articles"])
 @router.get("/feed", response_model=FeedResponse)
 async def get_articles_feed(
     category: Optional[str] = Query("all", description="Filter by category slug or 'all'"),
-    limit: int = Query(25, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=200),
     skip: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),

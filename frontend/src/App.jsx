@@ -49,7 +49,7 @@ export default function App() {
         const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
 
         const [articlesRes, profileRes] = await Promise.all([
-          fetch("/api/articles", { headers: authHeaders }),
+          fetch("/api/articles?limit=150", { headers: authHeaders }),
           token ? fetch("/api/auth/me", { headers: authHeaders }) : Promise.resolve({ ok: false }),
         ]);
 
