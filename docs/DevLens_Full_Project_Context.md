@@ -2,7 +2,7 @@
 
 > Feed this document to your AI coding agent at the start of any build session.
 > It contains the complete, up-to-date state, decisions, and architecture of the project.
-> **Last updated: September 22, 2026**
+> **Last updated: September 23, 2026**
 
 ---
 
@@ -27,232 +27,183 @@
 
 ## 2. What DevLens Is
 
-DevLens is an **AI-powered tech news aggregation and learning platform** that:
+DevLens is an **AI-powered technical learning platform & news intelligence aggregator** that:
 
-1. **Automatically collects** technical articles from free, high-signal RSS feeds and the Dev.to API (no paid APIs)
-2. **Quality-ranks** each article using a custom scoring algorithm (freshness + source authority + content substance + engagement)
-3. **AI-summarises** new articles using Google Gemini Flash — producing a structured summary, "why it matters", key takeaways, difficulty level, and skills extracted
-4. **Personalises** the feed based on each user's selected topic preferences
-5. **Deduplicates** articles using SHA-256 URL hashing so the same article is never saved twice
-
-**Target user:** Engineering/CS students who want structured, curated tech updates without information overload.
+1. **Automatically collects** technical articles from 17 free, authoritative RSS feeds and the Dev.to REST API across 6 engineering categories.
+2. **Quality-ranks** every candidate article using a 4-factor scoring algorithm (Freshness, Source Authority, Content Substance, Engagement). Articles scoring below `0.65` are dropped.
+3. **Caps ingestion** at 15 quality articles per category per day to prevent noise and feed overload.
+4. **AI-summarises** new articles using Google Gemini Flash (`gemini-2.5-flash`), extracting executive summaries, "why it matters", key takeaways, difficulty rating, and technical skills.
+5. **Personalises** the feed based on each user's selected topic preferences (dual-layer filtering: backend SQL filtering + instant client-side memo).
+6. **Deduplicates** via SHA-256 URL hashing so no article is ever saved twice.
 
 ---
 
-## 3. Current State — What Is Fully Built (September 22, 2026)
+## 3. Current State & Deliverables (As of September 23, 2026)
 
 ### Backend (FastAPI + Python 3.13)
-
-**Location:** `devlens-demo/backend/`
-
-| Component | Status | Notes |
-|---|---|---|
-| JWT Authentication (bcrypt) | ✅ Done | Register, login, me, update preferences |
-| PostgreSQL via Supabase | ✅ Connected | asyncpg driver, connection pooler |
-| SQLAlchemy ORM Models | ✅ Done | `users`, `articles` tables |
-| Article Feed Endpoint | ✅ Done | Pagination, category filter, user preference filter |
-| RSS Feed Fetcher | ✅ Done | 17 feeds across 6 categories |
-| Dev.to API Fetcher | ✅ Done | Per-category tag mapping |
-| Quality Scoring Algorithm | ✅ Done | 4-factor score: freshness, authority, substance, engagement |
-| Daily Article Cap | ✅ Done | 15 articles/category/day enforced in DB |
-| SHA-256 Deduplication | ✅ Done | No duplicate URLs ever saved |
-| Gemini AI Summariser | ✅ Done | gemini-2.5-flash, responseSchema, anti-hallucination triad |
-| Input validation (Auth) | ✅ Done | Email format, password length, duplicate check |
+- **Location:** `devlens-demo/backend/`
+- **Real JWT Auth (bcrypt):** Registration, login, profile (`/api/auth/me`), and topic preference updates (`/api/auth/preferences`).
+- **PostgreSQL Database:** Connected to Supabase via `asyncpg` connection pooler.
+- **Article Pipeline:** Collects from 17 feeds; 109 articles currently indexed and scored (scores 0.84 – 0.95).
+- **Automated Background Sync (Approach A):** Runs via FastAPI `lifespan` 5 seconds after server boot and repeats every 12 hours automatically.
+- **Dynamic CORS:** Supports `CORS_ORIGINS` environment variable for cloud deployment.
+- **API Limits:** Endpoint `/api/articles` supports query `limit` up to 200 items.
 
 ### Frontend (React 19 + Vite + Tailwind CSS)
-
-**Location:** `devlens-demo/frontend/`
-
-| Component | Status | Notes |
-|---|---|---|
-| Auth Page (Sign In / Sign Up) | ✅ Done | Form validation, error messages, JWT storage |
-| Category Onboarding Modal | ✅ Done | First login flow |
-| Article Feed | ✅ Done | User-topic filter, category pills, search |
-| Article Modal | ✅ Done | Full article view with summary, takeaways, skills |
-| Header + User Dropdown | ✅ Done | Name formatting, avatar, logout |
-| Profile Section | ✅ Done | Edit preferences, view stats |
-| Analytics Page | ✅ Done (placeholder) | "Coming soon" state |
-| Quiz Page | ✅ Done (placeholder) | "Coming soon" state |
-| Loading Animations | ✅ Done | Skeleton screens on article load |
-
-### Database (Supabase / PostgreSQL)
-
-```
-Host:     aws-0-ap-northeast-1.pooler.supabase.com
-Port:     6543 (shared pooler)
-User:     postgres.cvytceiytfpvmodsybqj
-DB:       postgres
-```
-Password and full `DATABASE_URL` are in `backend/.env`.
+- **Location:** `devlens-demo/frontend/`
+- **Initial Feed Load:** App fetches up to 150 articles on boot, ensuring all categories (e.g. Web Dev, DevOps, AI) have rich article pools in memory.
+- **Filter Controls:**
+  - Explicit **"APPLY"** button (`btn-apply-filters`) and **"RESET"** button (`btn-reset-filters`).
+  - Draft filter state separates user input selections from the active feed until "APPLY" is clicked.
+  - "LAST 3 MONTHS" option removed; default time horizon is "ALL TIME" (value 0).
+  - Quick topic pills at the top jump and apply categories immediately on click.
+- **Pagination & Loading UX:**
+  - Initial view displays strictly **15 articles** (1 featured hero + 14 grid cards).
+  - **"LOAD MORE ARTICLES"** button appears when more articles exist.
+  - Clicking "LOAD MORE" displays an animated spinner and pulsing skeleton placeholder cards for ~450ms, then reveals the next 15 articles.
+- **Sign Up / Sign In:**
+  - Full Name placeholder: `"your name"`
+  - Email placeholder: `"your gmail"` (Sign Up) / `"name@gmail.com or username"` (Sign In)
+- **Clean UI:** `+ NEW ARTICLE` manual button removed from feed view.
+- **Cover Image Generation:** Deterministic bitwise hashing of `article.id` mapped to curated Unsplash editorial tech photography (`imageUtils.js`). Fast, CDN-cached, 0 external API limits, 0 broken links.
 
 ---
 
-## 4. Folder Structure (Current, Actual)
+## 4. Live Storage & Database Metrics (Supabase)
+
+Queried live from Supabase PostgreSQL:
+- **`articles` table (109 articles):** **248 KB** (includes summaries, takeaways, skills JSON, indexes).
+- **`users` table:** **128 KB**.
+- **All App Tables Combined:** **~1.8 MB**.
+- **Supabase Free Quota:** **500 MB**.
+- **Storage Consumption:** **~0.36% of free tier** (>498 MB free). At 15 articles/category/day (~90 articles/day = ~200 KB/day), the database can run for **6+ years** before reaching 500 MB.
+
+---
+
+## 5. Folder Structure (Current, Actual)
 
 ```
 devlens-demo/
+├── .gitignore                      ← Clean: ignores .env, node_modules, __pycache__, .venv
+├── README.md
 ├── backend/
-│   ├── main.py                     ← FastAPI app entry, CORS, router registration
+│   ├── main.py                     ← App entry, lifespan, auto-sync worker, CORS
 │   ├── requirements.txt
+│   ├── railway.json                ← Railway deployment config (Nixpacks, uvicorn $PORT)
 │   ├── .env                        ← Secrets (DATABASE_URL, JWT_SECRET, GEMINI_API_KEY)
+│   ├── .env.example
 │   └── app/
 │       ├── controllers/
-│       │   ├── auth_controller.py  ← /api/auth/* routes (register, login, me, preferences)
-│       │   ├── article_controller.py ← /api/articles/* routes (feed, sync)
+│       │   ├── auth_controller.py  ← /api/auth/* (register, login, me, preferences)
+│       │   ├── article_controller.py ← /api/articles/* (feed, sync, execute_article_sync)
 │       │   └── health_controller.py  ← /api/health
 │       ├── models/
-│       │   ├── database.py         ← SQLAlchemy async engine + get_db dependency
-│       │   ├── user.py             ← User ORM model
-│       │   ├── article.py          ← Article ORM model
-│       │   └── read_event.py       ← ReadEvent ORM model
+│       │   ├── database.py         ← SQLAlchemy async engine + AsyncSessionLocal
+│       │   ├── user.py             ← User model
+│       │   ├── article.py          ← Article model (with url_hash, relevance_score)
+│       │   └── read_event.py       ← ReadEvent model
 │       ├── services/
-│       │   ├── fetcher.py          ← RSS + Dev.to fetcher, quality scoring, daily cap logic
-│       │   └── summariser.py       ← Gemini AI summariser (responseSchema, anti-hallucination)
+│       │   ├── fetcher.py          ← RSS + Dev.to fetcher, quality scoring (0.65 threshold)
+│       │   └── summariser.py       ← Gemini Flash summariser (responseSchema, temperature: 0.1)
 │       ├── views/
-│       │   ├── auth_views.py       ← Pydantic request/response models for auth
-│       │   └── article_views.py    ← Pydantic request/response models for articles
+│       │   ├── auth_views.py       ← Pydantic schemas for auth
+│       │   └── article_views.py    ← Pydantic schemas for articles (ArticleResponse, FeedResponse)
 │       └── utils/
-│           ├── config.py           ← Settings (pydantic BaseSettings, reads .env)
-│           └── security.py         ← bcrypt, JWT create/decode, get_current_user
+│           ├── config.py           ← Settings from .env
+│           └── security.py         ← bcrypt password hashing, JWT creation/verification
 │
 ├── frontend/
-│   ├── vite.config.js              ← Vite config (port 3000, proxy /api → :8000)
+│   ├── package.json
+│   ├── vite.config.js              ← Port 3000, proxies /api -> http://127.0.0.1:8000
+│   ├── railway.json                ← Railway deployment config (build & serve dist)
+│   ├── .env.example                ← VITE_API_URL documentation
 │   └── src/
-│       ├── App.jsx                 ← Root component, auth state, routing logic
+│       ├── App.jsx                 ← App state, loads 150 articles, auth checks
 │       ├── main.jsx
+│       ├── index.css
 │       ├── components/
-│       │   ├── Header.jsx          ← Top nav, user dropdown, logout
-│       │   ├── ArticleFeed.jsx     ← Main feed, topic pills, search, skeleton loading
-│       │   ├── ArticleCard.jsx     ← Individual article card
-│       │   ├── ArticleModal.jsx    ← Full article view modal
-│       │   ├── AuthPage.jsx        ← Sign In / Sign Up with validation
-│       │   ├── CategoryOnboardingModal.jsx ← First-login category picker
-│       │   ├── ProfileSection.jsx  ← User profile and preferences
+│       │   ├── Header.jsx          ← Nav, cleanName formatting, user dropdown
+│       │   ├── ArticleFeed.jsx     ← Feed, 15-item pagination, Load More, Apply filters
+│       │   ├── ArticleCard.jsx     ← Article card with difficulty, score, skills
+│       │   ├── ArticleModal.jsx    ← Article detail, summary, takeaways, redirect link
+│       │   ├── AuthPage.jsx        ← Sign in / Sign up with validated placeholders
+│       │   ├── CategoryOnboardingModal.jsx ← Onboarding topic picker
+│       │   ├── ProfileSection.jsx  ← User settings & category updates
 │       │   ├── ComingSoonView.jsx  ← Placeholder for Analytics & Quiz
-│       │   └── QuizModal.jsx       ← Quiz UI (wired to future endpoint)
-│       ├── data/
-│       │   └── mockDatabase.js     ← CATEGORIES_CONFIG (6 categories), INITIAL_USER_PROFILE
+│       │   └── DailyGoalWidget.jsx ← Daily reading target tracker
+│       ├── controllers/
+│       │   ├── apiClient.js        ← Centralized fetch wrapper, handles VITE_API_URL
+│       │   └── authController.js   ← Auth helper methods
 │       └── utils/
-│           ├── imageUtils.js       ← Category-seeded cover image picker (Unsplash)
-│           └── tfidf.js            ← Client-side TF-IDF for keyword extraction
+│           ├── imageUtils.js       ← Deterministic cover image hasher
+│           └── tfidf.js            ← Client-side TF-IDF keyword extractor
 │
 └── docs/
-    ├── DevLens_Full_Project_Context.md   ← This file (up-to-date)
-    ├── DevLens_Review_Guide.md           ← Study guide for review preparation
-    ├── Backend_Beginner_Guide.md         ← Detailed Python/FastAPI learning doc
-    └── Feed_Sources.md                   ← All RSS feed sources documented
+    ├── DevLens_Full_Project_Context.md ← This file
+    └── DevLens_Review_Guide.md         ← Full review study guide & mentor Q&A
 ```
 
 ---
 
-## 5. All API Endpoints (Current, Working)
-
-| Method | Route | Auth | What it does |
-|---|---|---|---|
-| GET | `/api/health` | No | Server health check |
-| POST | `/api/auth/register` | No | Create user, validate email/password, return JWT |
-| POST | `/api/auth/login` | No | Login by email or username, return JWT |
-| GET | `/api/auth/me` | Yes | Return current user profile + preferences |
-| PUT | `/api/auth/preferences` | Yes | Update user's selected topic categories |
-| GET | `/api/articles` | Optional | Paginated feed — filters by user preferences if logged in |
-| GET | `/api/articles/{id}` | No | Single article details |
-| POST | `/api/articles/sync` | No | Trigger article collection from all sources |
-
-**Interactive API docs:** `http://127.0.0.1:8000/docs` (Swagger UI — auto-generated by FastAPI)
-
----
-
-## 6. Key Technical Decisions (with rationale)
-
-### 6.1 Why Python + FastAPI (not Express)
-- Student learning Python as an explicit goal of this project
-- FastAPI auto-generates Swagger docs at `/docs` — zero extra work, great for review demos
-- Pydantic = same as Joi/Zod in JS. SQLAlchemy = same as Mongoose. `async/await` = same as JavaScript
-- `py -3.13` because asyncpg and pydantic-core have no prebuilt wheels for Python 3.14 on Windows
-
-### 6.2 Why self-sourcing (RSS + Dev.to) instead of NewsAPI
-- NewsAPI/GNews free tiers **forbid production use** in their Terms of Service
-- Mentor pushed back: "just calling an API is not a custom agent" — self-sourcing answers this objection
-- Dev.to, arXiv, CSS-Tricks, Krebs on Security, AWS Blog — all open, free, no ToS restrictions
-
-### 6.3 Why Supabase (PostgreSQL) not SQLite
-- Project needs to run in the browser from college when Saurabh can't bring his laptop
-- Supabase = free hosted PostgreSQL with a permanent URL — deploys to Render and just works
-- Same SQLAlchemy code, only `DATABASE_URL` in `.env` changes
-
-### 6.4 Quality Scoring — Why custom algorithm instead of just taking all articles
-- RSS feeds produce 50–200 items — showing all of them would be noise
-- 4-factor score: **Freshness (35%) + Source Authority (40%) + Content Substance (15%) + Engagement (10%)**
-- Articles below `QUALITY_THRESHOLD = 0.65` are discarded before saving
-- Cap: maximum 15 articles per category per day
-
-### 6.5 Deduplication via SHA-256 URL hash
-- Same article appears in multiple feeds. Without dedup, the DB fills with duplicates.
-- SHA-256 of the normalized URL (lowercased, stripped) is stored as `url_hash` with a `UNIQUE` constraint
-- If `url_hash` already exists in the DB → skip. One line check, zero duplicates forever.
-
-### 6.6 Gemini AI Summariser — Anti-Hallucination Triad
-Always used together on every Gemini call:
-1. `temperature: 0.1` → near-deterministic output, no creative hallucinations
-2. `responseSchema` → forces exact JSON structure at the model level (summary, why_it_matters, key_takeaways, difficulty, skills_extracted)
-3. **Grounding system prompt** → "Summarize ONLY from the provided text. Do NOT fabricate metrics."
-
-### 6.7 The "Custom AI Agent" framing (for mentor questions)
-> "The LLM is one tool the agent calls — like a database call. The custom part is the orchestration: the self-sourcing Fetch step, the quality-ranking algorithm, the SHA-256 deduplication, the Gemini call with grounding, and the DB upsert. That is all original code written by us."
-
----
-
-## 7. All Content Sources (Current)
+## 6. Content Sources (17 Curated Feeds)
 
 | Category | Sources |
 |---|---|
-| Web Development | CSS-Tricks RSS, web.dev RSS |
-| Artificial Intelligence | arXiv cs.AI RSS, Hugging Face Blog, OpenAI Blog |
-| Data Science | KDnuggets RSS, arXiv cs.LG RSS |
-| Cyber Security | The Hacker News RSS, Bleeping Computer, Krebs on Security |
-| Cloud Computing | AWS News Blog RSS, Google Cloud Blog, Azure Blog |
-| DevOps | The New Stack RSS, CNCF Blog, Kubernetes Blog |
-| All categories | Dev.to API (per-category tag mapping) |
+| **Artificial Intelligence** | arXiv cs.AI, OpenAI Blog, Hugging Face Blog, Dev.to AI |
+| **DevOps** | Kubernetes Official Blog, CNCF Blog, The New Stack, Dev.to DevOps |
+| **Cyber Security** | Krebs on Security, The Hacker News, Bleeping Computer, Dev.to Security |
+| **Cloud Computing** | AWS News Blog, Google Cloud Blog, Azure Blog, Dev.to Cloud |
+| **Data Science** | arXiv cs.LG, KDnuggets, Dev.to Data Science |
+| **Web Development** | web.dev (Google Chrome), CSS-Tricks, Dev.to Webdev |
 
 ---
 
-## 8. Environment & Secrets
+## 7. Key Architecture & Decisions for Review
 
-**File:** `backend/.env`
+1. **Why FastAPI over Express:** Automatic interactive OpenAPI documentation at `/docs` (Swagger UI). Mentors can test every API endpoint live without writing code.
+2. **Quality Scoring Algorithm:** 
+   $$\text{Score} = (\text{Freshness} \times 0.35) + (\text{Authority} \times 0.40) + (\text{Substance} \times 0.15) + (\text{Engagement} \times 0.10)$$
+   Articles below `0.65` are dropped. Maximum 15 articles per category per day.
+3. **URL Deduplication:** SHA-256 hash of normalized URL with a unique database index. Ensures $O(1)$ duplicate prevention.
+4. **Anti-Hallucination Triad for Gemini:**
+   - `temperature: 0.1` (near-deterministic)
+   - `responseSchema` (forces exact JSON shape)
+   - Grounding system prompt (*"Summarize ONLY based on provided text"*).
+5. **Deterministic Image Generation:** Curated Unsplash editorial collection mapped by domain and hashed by article ID. Fast CDN loading, 0 external API limits, 0 broken links.
 
+---
+
+## 8. Deployment Plan (Railway)
+
+### Step 1: Push latest commits to GitHub
+```bash
+git push origin main
 ```
-DATABASE_URL=postgresql+asyncpg://postgres.cvytceiytfpvmodsybqj:...@aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres
-JWT_SECRET=devlens_jwt_secret_key_2026_super_secure
-GEMINI_API_KEY=<YOUR_GEMINI_API_KEY>
-HOST=127.0.0.1
-PORT=8000
-```
 
-> [!NOTE]
-> The Gemini key is valid and tested — it lists 40+ models including `gemini-2.5-flash`.
-> It times out locally due to ISP firewall blocking long POST connections.
-> It will work fully when deployed (Render/Railway) where no such restrictions exist.
+### Step 2: Deploy Backend on Railway
+1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**.
+2. Select repo → set **Root Directory** to `backend`.
+3. Add Environment Variables:
+   - `DATABASE_URL` = (Supabase connection string from `.env`)
+   - `JWT_SECRET` = `devlens_jwt_secret_key_2026_super_secure`
+   - `GEMINI_API_KEY` = `<YOUR_GEMINI_API_KEY>`
+4. Copy generated Railway URL (e.g. `https://devlens-backend.up.railway.app`).
 
----
+### Step 3: Deploy Frontend on Railway
+1. In same project → **Add Service** → **GitHub repo** → Root Directory: `frontend`.
+2. Add Environment Variable:
+   - `VITE_API_URL` = `https://devlens-backend.up.railway.app`
+3. Copy generated Frontend URL (e.g. `https://devlens-frontend.up.railway.app`).
 
-## 9. Developer Constraints
-
-- **Machine:** Lenovo IdeaPad S145, AMD A6-9225, 8GB RAM, no GPU
-- **Python:** Use `py -3.13` always — 3.14 has no prebuilt wheels for `asyncpg`/`pydantic-core` on Windows
-- **No local Docker** — Dockerfile exists for cloud deployment only (Render). Never `docker run` locally.
-- **No GPU** — all AI via Gemini REST API, no local inference
-- **Can't bring laptop to college** → Must deploy before next review
+### Step 4: Configure CORS
+In Backend Service variables, set:
+- `CORS_ORIGINS` = `https://devlens-frontend.up.railway.app`
 
 ---
 
-## 10. Instructions for AI Coding Agent
+## 9. Recent Git Commits
 
-1. **Python:** Always target 3.11–3.13. Run with `py -3.13`. Never use 3.14 features.
-2. **Database:** Connected to Supabase (PostgreSQL). Do not assume SQLite. Never hardcode DB URL.
-3. **No Docker locally** — it's for cloud deployment only.
-4. **All Gemini calls** must use `responseSchema`, `temperature: 0.1`, and a grounding system prompt.
-5. **No TypeScript** in frontend — `.jsx` and `.js` only.
-6. **Ponytail mode** — simplest working code. No premature abstractions. No speculative features.
-7. **Beginner-friendly** — student is new to Python. Comment every non-obvious line. Mentor will ask.
-8. **Root-cause fixes** — fix the actual bug, not symptoms.
-9. **Next priority: Deployment** — Render (backend) + Vercel/Netlify (frontend).
+- `b2f5ae4` — fix: remove New Article button, add Railway configs, fix CORS for deployment
+- `5c0e3b8` — feat: add automatic background article sync on startup and 12-hour schedule
+- `9412173` — fix(ui): update signup placeholders to 'your name' and 'your gmail'
+- `151c9f0` — feat(ui): add Apply filter button, 15-article pagination with animated Load More, remove 3-month option, fix web-dev pool
