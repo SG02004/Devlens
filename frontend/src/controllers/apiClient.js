@@ -1,9 +1,14 @@
 /**
  * Centralized API Client for DevLens
  * Manages HTTP requests, bearer authentication tokens, and standardized errors.
+ *
+ * VITE_API_URL:
+ *   - Local dev: leave empty → relative paths proxy through Vite (/api → localhost:8000)
+ *   - Railway:   set to https://your-backend.up.railway.app → absolute calls to prod backend
  */
 
 const TOKEN_KEY = "devlens.auth_token";
+const BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -20,7 +25,7 @@ export function setAuthToken(token) {
 export async function request(endpoint, options = {}) {
   const { params, headers: customHeaders, ...restOptions } = options;
 
-  let url = endpoint;
+  let url = BASE_URL + endpoint;
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, val]) => {
