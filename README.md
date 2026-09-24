@@ -39,6 +39,7 @@ devlens-demo/
 │       └── views/                # API responses & formatting
 │
 └── docs/                         # Architecture guides & documentation
+    ├── DevLens_Master_Project_Guide.md  # ⭐ Full project guide + mentor Q&A (read first)
     ├── Backend_Beginner_Guide.md # Step-by-step backend roadmap for beginners
     └── DevLens_Full_Project_Context.md
 ```
@@ -87,6 +88,6 @@ Available at: `http://localhost:3000/` (proxies `/api` requests to backend on po
 ### Backend (FastAPI)
 ```bash
 cd backend
-py -3.13 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+py -3.13 -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 Interactive API documentation available at: `http://127.0.0.1:8000/docs`.
