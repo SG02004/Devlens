@@ -88,6 +88,6 @@ Interactive API documentation available at: `http://127.0.0.1:8000/docs`.
 ## 🚀 Live Deployment
 
 The application is deployed and running live:
-* **Production URL:** [https://railway.app](https://railway.app)
+* **Production URL:** [https://devlens-frontend-production.up.railway.app/](https://devlens-frontend-production.up.railway.app/)
 
 ---
