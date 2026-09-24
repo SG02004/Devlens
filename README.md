@@ -2,12 +2,6 @@
 
 DevLens is an AI-powered technical learning platform that curates high-signal engineering articles, system architecture blogs, and research papers—delivering structured insights, skill mappings, and context-grounded quizzes for developers and computer science students.
 
-> [!IMPORTANT]
-> **Project Scope Directive:**
-> - **Exclusively work within this project folder (`devlens-demo/`).**
-> - Do not modify or interact with sibling directories (e.g. `../devlens/` or `../ai/`).
-> - The frontend is built strictly in **React JavaScript (`.jsx` / `.js`)** with **zero TypeScript**.
-> - The backend is built in **Python 3.13 (`py -3.13`) + FastAPI + SQLite/PostgreSQL**.
 
 ---
 
@@ -91,3 +85,9 @@ cd backend
 py -3.13 -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 Interactive API documentation available at: `http://127.0.0.1:8000/docs`.
+## 🚀 Live Deployment
+
+The application is deployed and running live:
+* **Production URL:** [https://railway.app](https://railway.app)
+
+---
