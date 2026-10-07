@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, Calendar, CheckCircle2, Bookmark, Award, ArrowUpRight } from "lucide-react";
+import { Clock, Calendar, CheckCircle2, Bookmark, Award, ArrowUpRight, ThumbsUp, Zap } from "lucide-react";
 import { getArticleCoverImage } from "../utils/imageUtils";
 
 export const ArticleCard = ({
@@ -7,6 +7,7 @@ export const ArticleCard = ({
   onOpenArticle,
   onToggleRead,
   onToggleBookmark,
+  onUpvote,
   onTakeQuiz,
 }) => {
   const coverImage = getArticleCoverImage(article.id, article.category, article.imageUrl);
@@ -102,7 +103,20 @@ export const ArticleCard = ({
             <span>•</span>
             <span>{formattedDate}</span>
             <span>•</span>
-            <span className="text-[var(--accent)] font-bold">{article.difficulty}</span>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`font-bold px-1.5 py-0.5 border text-[9px] uppercase tracking-wider ${
+                  article.difficulty === "Beginner"
+                    ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+                    : article.difficulty === "Advanced"
+                    ? "border-rose-500/40 text-rose-400 bg-rose-500/10"
+                    : "border-amber-500/40 text-amber-400 bg-amber-500/10"
+                }`}
+                title={`Technical Depth: ${article.difficulty || "Intermediate"}`}
+              >
+                {article.difficulty || "Intermediate"}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -119,6 +133,22 @@ export const ArticleCard = ({
         </button>
 
         <div className="flex items-center gap-2">
+          {/* Public Upvote Counter & Button */}
+          {onUpvote && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onUpvote(article.id);
+              }}
+              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer bg-[var(--bg-surface)] text-[var(--ink)]"
+              title="Upvote this article (visible to everyone)"
+            >
+              <ThumbsUp className="w-3 h-3 text-[var(--accent)]" />
+              <span>{article.upvotes || 0}</span>
+            </button>
+          )}
+
           {onTakeQuiz && (
             <button
               type="button"

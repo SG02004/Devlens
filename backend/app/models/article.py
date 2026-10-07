@@ -37,6 +37,8 @@ class Article(Base):
     upvotes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     comments_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     relevance_score: Mapped[float] = mapped_column(Float, default=0.5, index=True, nullable=False)
+    # Local AI: textstat Flesch Reading Ease score (0-100). Higher = more readable.
+    readability_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=get_utc_now, nullable=False

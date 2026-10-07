@@ -61,8 +61,8 @@ async def register_user(
         await db.commit()
         await db.refresh(new_user)
 
-        # Generate JWT token
-        token = create_access_token(data={"sub": new_user.id, "email": new_user.email})
+        # Generate JWT token (include role for frontend admin routing)
+        token = create_access_token(data={"sub": new_user.id, "email": new_user.email, "role": getattr(new_user, "role", "user")})
         user_response = UserResponse.from_orm_user(new_user)
 
         return TokenResponse(
@@ -112,7 +112,7 @@ async def login_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        token = create_access_token(data={"sub": user.id, "email": user.email})
+        token = create_access_token(data={"sub": user.id, "email": user.email, "role": getattr(user, "role", "user")})
         user_response = UserResponse.from_orm_user(user)
 
         return TokenResponse(

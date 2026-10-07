@@ -22,6 +22,7 @@ class ArticleResponse(BaseModel):
     upvotes: int = 0
     comments_count: int = Field(0, alias="commentsCount")
     relevance_score: float = Field(0.5, alias="relevanceScore")
+    readability_score: float = Field(0.0, alias="readabilityScore")
     is_bookmarked: bool = Field(False, alias="isBookmarked")
     is_read: bool = Field(False, alias="isRead")
 
@@ -51,6 +52,7 @@ class ArticleResponse(BaseModel):
             upvotes=article.upvotes,
             comments_count=article.comments_count,
             relevance_score=article.relevance_score,
+            readability_score=getattr(article, "readability_score", 0.0),
             is_bookmarked=is_bookmarked,
             is_read=is_read,
         )

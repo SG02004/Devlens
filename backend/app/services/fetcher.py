@@ -5,74 +5,79 @@ from typing import List, Dict, Any, Optional
 import httpx
 import feedparser
 
-# Curated feeds per category (free, high-signal, no API key needed)
+# Curated feeds per category (exclusively Phase 2+ vetted engineering & research feeds)
 CATEGORY_FEEDS = {
     "web-development": [
-        {"name": "CSS-Tricks", "url": "https://css-tricks.com/feed/", "type": "rss"},
-        {"name": "web.dev", "url": "https://web.dev/feed.xml", "type": "rss"},
+        {"name": "Smashing Magazine", "url": "https://www.smashingmagazine.com/feed", "type": "rss"},
+        {"name": "MDN Blog", "url": "https://developer.mozilla.org/en-US/blog/rss.xml", "type": "rss"},
+        {"name": "Go Blog", "url": "https://go.dev/blog/feed.atom", "type": "rss"},
+        {"name": "Node.js Blog", "url": "https://nodejs.org/en/feed/blog.xml", "type": "rss"},
     ],
     "artificial-intelligence": [
-        {"name": "arXiv cs.AI", "url": "http://export.arxiv.org/rss/cs.AI", "type": "rss"},
-        {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml", "type": "rss"},
-        {"name": "OpenAI Blog", "url": "https://openai.com/news/rss.xml", "type": "rss"},
+        {"name": "Google Research Blog", "url": "https://research.google/blog/rss/", "type": "rss"},
+        {"name": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml", "type": "rss"},
+        {"name": "Meta Engineering", "url": "https://engineering.fb.com/feed/", "type": "rss"},
+        {"name": "Apple ML Research", "url": "https://machinelearning.apple.com/rss.xml", "type": "rss"},
     ],
     "data-science": [
-        {"name": "KDnuggets", "url": "https://www.kdnuggets.com/feed", "type": "rss"},
-        {"name": "arXiv cs.LG", "url": "http://export.arxiv.org/rss/cs.LG", "type": "rss"},
+        {"name": "Towards Data Science", "url": "https://towardsdatascience.com/feed", "type": "rss"},
+        {"name": "Import AI", "url": "https://importai.substack.com/feed", "type": "rss"},
+        {"name": "AWS Big Data Blog", "url": "https://aws.amazon.com/blogs/big-data/feed/", "type": "rss"},
     ],
     "cyber-security": [
-        {"name": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews", "type": "rss"},
-        {"name": "Bleeping Computer", "url": "https://www.bleepingcomputer.com/feed/", "type": "rss"},
-        {"name": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/", "type": "rss"},
+        {"name": "SANS ISC", "url": "https://isc.sans.edu/rssfeed.xml", "type": "rss"},
+        {"name": "CSO Online", "url": "https://www.csoonline.com/feed/", "type": "rss"},
+        {"name": "Unit 42", "url": "https://unit42.paloaltonetworks.com/feed/", "type": "rss"},
+        {"name": "Wired Security", "url": "https://www.wired.com/feed/category/security/latest/rss", "type": "rss"},
     ],
     "cloud-computing": [
-        {"name": "AWS News Blog", "url": "https://aws.amazon.com/blogs/aws/feed/", "type": "rss"},
-        {"name": "Google Cloud Blog", "url": "https://cloudblog.withgoogle.com/rss/", "type": "rss"},
-        {"name": "Azure Blog", "url": "https://azure.microsoft.com/en-us/blog/feed/", "type": "rss"},
+        {"name": "Cloudflare Blog", "url": "https://blog.cloudflare.com/rss/", "type": "rss"},
+        {"name": "InfoQ Cloud", "url": "https://feed.infoq.com/Cloud/news", "type": "rss"},
+        {"name": "Netflix Tech Blog", "url": "https://netflixtechblog.com/feed", "type": "rss"},
     ],
     "devops": [
-        {"name": "The New Stack", "url": "https://thenewstack.io/feed/", "type": "rss"},
-        {"name": "CNCF Blog", "url": "https://www.cncf.io/blog/feed/", "type": "rss"},
-        {"name": "Kubernetes Blog", "url": "https://kubernetes.io/feed.xml", "type": "rss"},
+        {"name": "GitHub Blog", "url": "https://github.blog/feed/", "type": "rss"},
+        {"name": "HashiCorp Blog", "url": "https://www.hashicorp.com/blog/feed.xml", "type": "rss"},
+        {"name": "DevOps.com", "url": "https://devops.com/feed/", "type": "rss"},
+        {"name": "Spotify Engineering", "url": "https://engineering.atspotify.com/feed/", "type": "rss"},
     ],
 }
 
-# Dev.to tags for direct REST API
-DEVTO_TAG_MAP = {
-    "web-development": "webdev",
-    "artificial-intelligence": "ai",
-    "data-science": "datascience",
-    "cyber-security": "security",
-    "cloud-computing": "cloud",
-    "devops": "devops",
-}
-
-# Domain authority weights for quality ranking (0.70 to 0.95)
+# Domain authority weights for quality ranking (0.74 to 0.92)
 SOURCE_WEIGHTS = {
-    "arXiv cs.AI": 0.92,
-    "arXiv cs.LG": 0.92,
-    "OpenAI Blog": 0.90,
-    "Kubernetes Blog": 0.88,
-    "CNCF Blog": 0.88,
-    "Azure Blog": 0.86,
-    "AWS News Blog": 0.86,
-    "Google Cloud Blog": 0.86,
-    "Krebs on Security": 0.86,
-    "Hugging Face Blog": 0.85,
-    "web.dev": 0.82,
-    "The Hacker News": 0.82,
-    "Bleeping Computer": 0.80,
-    "The New Stack": 0.80,
-    "CSS-Tricks": 0.78,
-    "KDnuggets": 0.76,
-    "Dev.to": 0.72,
+    # Premier research orgs & academic tier (0.90 - 0.92)
+    "Google Research Blog": 0.92,
+    "Google DeepMind": 0.92,
+    "Apple ML Research": 0.90,
+    # Core infrastructure & platform engineering (0.86 - 0.89)
+    "Meta Engineering": 0.88,
+    "Unit 42": 0.88,
+    "SANS ISC": 0.86,
+    "Cloudflare Blog": 0.86,
+    "Netflix Tech Blog": 0.86,
+    "GitHub Blog": 0.86,
+    # Leading vendor & runtime authority (0.80 - 0.85)
+    "HashiCorp Blog": 0.85,
+    "AWS Big Data Blog": 0.85,
+    "Node.js Blog": 0.84,
+    "Go Blog": 0.84,
+    "MDN Blog": 0.82,
+    "Spotify Engineering": 0.82,
+    "InfoQ Cloud": 0.80,
+    # Industry & practitioner publications (0.74 - 0.79)
+    "Towards Data Science": 0.78,
+    "Smashing Magazine": 0.78,
+    "CSO Online": 0.78,
+    "Wired Security": 0.76,
+    "Import AI": 0.76,
+    "DevOps.com": 0.74,
 }
 
 # Minimum quality threshold to accept an article (discard junk/stale items)
 QUALITY_THRESHOLD = 0.65
 
-# Maximum articles per category per daily batch
-MAX_ARTICLES_PER_DAY = 15
+# Maximum articles per category per daily automated batch (admin manual curation fills the rest)
+MAX_ARTICLES_PER_DAY = 7
 
 
 def clean_html(raw_html: str) -> str:
@@ -256,10 +261,11 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
             summary = format_summary_excerpt(raw_summary)
             author = entry.get("author", f"{source_name} Editorial")
 
-            # Parse published date
+            # Parse published date (supports both RSS published_parsed and Atom updated_parsed)
             published_at = None
-            if hasattr(entry, "published_parsed") and entry.published_parsed:
-                published_at = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
+            parsed_time = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
+            if parsed_time:
+                published_at = datetime(*parsed_time[:6], tzinfo=timezone.utc)
 
             rel_score = calculate_quality_score(
                 source=source_name,
@@ -299,21 +305,65 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
 
 async def fetch_articles_for_category(category: str, limit_per_source: int = 4) -> List[Dict[str, Any]]:
     """
-    Fetches raw candidates from Dev.to and all category RSS feeds,
+    Fetches raw candidates from the category RSS feeds in CATEGORY_FEEDS,
     applies quality scoring, enforces the quality threshold, and returns
-    at most MAX_ARTICLES_PER_DAY (15) articles (or fewer if fewer qualify).
+    at most MAX_ARTICLES_PER_DAY (7) articles (or fewer if fewer qualify).
     """
     candidates = []
 
-    # 1. Dev.to API
-    devto_items = await fetch_devto_articles(category, limit=limit_per_source)
-    candidates.extend(devto_items)
-
-    # 2. RSS Feeds (including newly added OpenAI, Krebs, Azure, Kubernetes)
     feeds = CATEGORY_FEEDS.get(category, [])
     for f in feeds:
         rss_items = await fetch_rss_feed(f, category, limit=limit_per_source)
         candidates.extend(rss_items)
 
-    # 3. Quality Gate & Daily Cap: Keep top-scoring articles passing threshold
+    # Quality Gate & Daily Cap: Keep top-scoring articles passing threshold
     return select_quality_articles(candidates, max_count=MAX_ARTICLES_PER_DAY, min_score=QUALITY_THRESHOLD)
+
+
+def extract_full_text(url: str, fallback: str = "") -> str:
+    """
+    Extracts the main article body text from a URL using trafilatura.
+    Returns a clean plain-text string.
+    Falls back to the provided RSS snippet if trafilatura fails or the
+    site blocks scraping (behind paywall, JS-only, etc.).
+
+    This is the Phase 2 full-text parsing feature — passes rich content
+    to Gemini instead of the short RSS <description> snippet.
+    """
+    try:
+        import trafilatura
+        downloaded = trafilatura.fetch_url(url)
+        if downloaded:
+            extracted = trafilatura.extract(
+                downloaded,
+                include_comments=False,
+                include_tables=False,
+                no_fallback=False,
+            )
+            if extracted and len(extracted.strip()) > 100:
+                return extracted.strip()
+    except Exception as e:
+        print(f"[Fetcher] trafilatura could not extract {url}: {e}")
+    return fallback
+
+
+def compute_readability(text: str) -> tuple[float, str]:
+    """
+    Uses textstat (local Python library, zero API calls) to score article reading ease.
+    Returns (flesch_score, difficulty_label).
+    Flesch Reading Ease: 0-30 = Very Difficult, 30-60 = Difficult/Advanced,
+    60-80 = Standard/Intermediate, 80-100 = Easy/Beginner.
+    """
+    try:
+        import textstat
+        score = textstat.flesch_reading_ease(text)
+        if score >= 80:
+            difficulty = "Beginner"
+        elif score >= 50:
+            difficulty = "Intermediate"
+        else:
+            difficulty = "Advanced"
+        return round(score, 2), difficulty
+    except Exception:
+        return 0.0, "Intermediate"
+

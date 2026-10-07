@@ -66,6 +66,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     name: Optional[str] = None
+    role: str = "user"
     institution: Optional[str] = "Full-Stack & Systems Engineering"
     program: Optional[str] = "Senior Developer"
     batch: Optional[str] = "Active Member"
@@ -84,6 +85,7 @@ class UserResponse(BaseModel):
             username=user.username,
             email=user.email,
             name=user.name or user.username,
+            role=getattr(user, "role", "user"),
             institution=user.institution or "Full-Stack & Systems Engineering",
             program=user.program or "Senior Developer",
             batch=user.batch or "Active Member",

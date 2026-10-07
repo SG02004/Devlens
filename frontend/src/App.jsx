@@ -7,6 +7,8 @@ import { ComingSoonView } from "./components/ComingSoonView";
 import { CategoryOnboardingModal } from "./components/CategoryOnboardingModal";
 import { ArticleFormModal } from "./components/ArticleFormModal";
 import { ArticleModal } from "./components/ArticleModal";
+import { AdminPanel } from "./components/AdminPanel";
+import { AnalyticsBoard } from "./components/AnalyticsBoard";
 import { INITIAL_ARTICLES, INITIAL_USER_PROFILE } from "./data/mockDatabase";
 import { X } from "lucide-react";
 
@@ -71,6 +73,10 @@ export default function App() {
               selectedCategories: user.selectedCategories || user.selected_categories || prev.selectedCategories,
             }));
             setIsAuthenticated(true);
+            // Restore admin panel on page refresh for admin users
+            if (user.role === "admin") {
+              setActiveTab("admin");
+            }
           }
         }
       } catch (err) {
@@ -89,27 +95,124 @@ export default function App() {
     }, 4000);
   };
 
-  // Toggle Read
+  // Helper to reload personalized feed with current token
+  const refreshArticlesFeed = async (sortMode = "for-you") => {
+    try {
+      const token = localStorage.getItem("devlens.auth_token");
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/articles?limit=150&sort=${encodeURIComponent(sortMode)}`, {
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items = data.articles || data.items || (Array.isArray(data) ? data : []);
+        if (Array.isArray(items) && items.length > 0) {
+          setArticles(items);
+        }
+      }
+    } catch {
+      // Keep current articles on transient network failure
+    }
+  };
+
+  // Toggle Read (persisted to Supabase ReadEvent table)
   const handleToggleRead = async (articleId) => {
     setArticles((prev) =>
       prev.map((a) => (a.id === articleId ? { ...a, isRead: !a.isRead } : a))
     );
+    if (activeDetailArticle && activeDetailArticle.id === articleId) {
+      setActiveDetailArticle((prev) => ({ ...prev, isRead: !prev.isRead }));
+    }
     try {
-      await fetch(`/api/articles/${articleId}/toggle-read`, { method: "POST" });
+      const token = localStorage.getItem("devlens.auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/articles/${articleId}/toggle-read`, {
+        method: "POST",
+        headers,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setArticles((prev) =>
+          prev.map((a) =>
+            a.id === articleId
+              ? { ...a, isRead: data.isRead, isBookmarked: data.isBookmarked }
+              : a
+          )
+        );
+        if (activeDetailArticle && activeDetailArticle.id === articleId) {
+          setActiveDetailArticle((prev) => ({
+            ...prev,
+            isRead: data.isRead,
+            isBookmarked: data.isBookmarked,
+          }));
+        }
+        if (typeof data.readCount === "number") {
+          setUserProfile((prev) => ({ ...prev, read_count: data.readCount, readCount: data.readCount }));
+        }
+      }
     } catch {
-      // Local state already updated
+      // Optimistic state retained
     }
   };
 
-  // Toggle Bookmark
+  // Toggle Bookmark (persisted to Supabase ReadEvent table)
   const handleToggleBookmark = async (articleId) => {
     setArticles((prev) =>
       prev.map((a) => (a.id === articleId ? { ...a, isBookmarked: !a.isBookmarked } : a))
     );
+    if (activeDetailArticle && activeDetailArticle.id === articleId) {
+      setActiveDetailArticle((prev) => ({ ...prev, isBookmarked: !prev.isBookmarked }));
+    }
     try {
-      await fetch(`/api/articles/${articleId}/toggle-bookmark`, { method: "POST" });
+      const token = localStorage.getItem("devlens.auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/articles/${articleId}/toggle-bookmark`, {
+        method: "POST",
+        headers,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setArticles((prev) =>
+          prev.map((a) =>
+            a.id === articleId
+              ? { ...a, isRead: data.isRead, isBookmarked: data.isBookmarked }
+              : a
+          )
+        );
+        if (activeDetailArticle && activeDetailArticle.id === articleId) {
+          setActiveDetailArticle((prev) => ({
+            ...prev,
+            isRead: data.isRead,
+            isBookmarked: data.isBookmarked,
+          }));
+        }
+      }
     } catch {
-      // Local state already updated
+      // Optimistic state retained
+    }
+  };
+
+  // Upvote Article (persist count to Supabase so it's visible to all users)
+  const handleUpvote = async (articleId) => {
+    setArticles((prev) =>
+      prev.map((a) => (a.id === articleId ? { ...a, upvotes: (a.upvotes || 0) + 1 } : a))
+    );
+    if (activeDetailArticle && activeDetailArticle.id === articleId) {
+      setActiveDetailArticle((prev) => ({ ...prev, upvotes: (prev.upvotes || 0) + 1 }));
+    }
+    try {
+      const res = await fetch(`/api/articles/${articleId}/upvote`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setArticles((prev) =>
+          prev.map((a) => (a.id === articleId ? { ...a, upvotes: data.upvotes } : a))
+        );
+        if (activeDetailArticle && activeDetailArticle.id === articleId) {
+          setActiveDetailArticle((prev) => ({ ...prev, upvotes: data.upvotes }));
+        }
+      }
+    } catch {
+      // Optimistic update retained
     }
   };
 
@@ -194,6 +297,7 @@ export default function App() {
       });
       if (res.ok) {
         setUserProfile((prev) => ({ ...prev, selectedCategories: categories }));
+        await refreshArticlesFeed();
         triggerNotification(`Updated focus categories (${categories.length} subscribed).`);
       } else {
         setUserProfile((prev) => ({ ...prev, selectedCategories: categories }));
@@ -210,6 +314,14 @@ export default function App() {
       ...userData,
     }));
     setIsAuthenticated(true);
+    refreshArticlesFeed();
+
+    // Admin users go straight to the admin panel
+    if (userData.role === "admin") {
+      setActiveTab("admin");
+      return;
+    }
+
     setActiveTab("feed");
 
     if (isNewSignup) {
@@ -274,6 +386,11 @@ export default function App() {
             theme={theme}
             onToggleTheme={toggleTheme}
           />
+        ) : activeTab === "admin" ? (
+          <AdminPanel
+            userProfile={userProfile}
+            onLogout={handleLogout}
+          />
         ) : activeTab === "feed" ? (
           <ArticleFeed
             articles={articles}
@@ -282,6 +399,7 @@ export default function App() {
             onOpenArticle={setActiveDetailArticle}
             onToggleRead={handleToggleRead}
             onToggleBookmark={handleToggleBookmark}
+            onUpvote={handleUpvote}
             onTakeQuiz={() => setActiveTab("quiz")}
           />
         ) : activeTab === "profile" ? (
@@ -296,10 +414,11 @@ export default function App() {
             onLogout={handleLogout}
           />
         ) : activeTab === "analytics" ? (
-          <ComingSoonView
-            title="Analytics & Reading Stats"
-            subtitle="Phase 2 Feature"
-            onReturnToFeed={() => setActiveTab("feed")}
+          <AnalyticsBoard
+            username={userProfile?.name || userProfile?.username}
+            articles={articles}
+            userProfile={userProfile}
+            onOpenArticle={setActiveDetailArticle}
           />
         ) : activeTab === "quiz" ? (
           <ComingSoonView
@@ -342,6 +461,8 @@ export default function App() {
         onClose={() => setActiveDetailArticle(null)}
         onToggleRead={handleToggleRead}
         onToggleBookmark={handleToggleBookmark}
+        onUpvote={handleUpvote}
+        onSelectArticle={setActiveDetailArticle}
         onTakeQuiz={() => setActiveTab("quiz")}
       />
     </div>

@@ -6,8 +6,12 @@ from app.utils.config import settings
 
 logger = logging.getLogger("devlens.summariser")
 
-# Google Gemini endpoint — use gemini-2.5-flash (confirmed available for this API key)
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+# Google Gemini endpoints — primary gemini-3.8-flash with flash-lite fallback on 503 spikes
+GEMINI_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-lite",
+]
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 SUMMARY_SCHEMA = {
     "type": "OBJECT",
@@ -85,28 +89,32 @@ ARTICLE CONTENT:
         },
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                GEMINI_API_URL,
-                params={"key": api_key},
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            )
-
-            if resp.status_code == 200:
-                data = resp.json()
-                candidate_text = (
-                    data.get("candidates", [{}])[0]
-                    .get("content", {})
-                    .get("parts", [{}])[0]
-                    .get("text", "")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for model_name in GEMINI_MODELS:
+            url = f"{GEMINI_BASE_URL}/{model_name}:generateContent"
+            try:
+                resp = await client.post(
+                    url,
+                    params={"key": api_key},
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
                 )
-                if candidate_text:
-                    return json.loads(candidate_text)
-            else:
-                logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text[:200]}")
-    except Exception as e:
-        logger.warning(f"Failed to generate Gemini summary for '{title}': {e}")
+
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidate_text = (
+                        data.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
+                    if candidate_text:
+                        return json.loads(candidate_text)
+                elif resp.status_code in (429, 503, 404):
+                    continue
+                else:
+                    logger.warning(f"Gemini API ({model_name}) returned {resp.status_code}: {resp.text[:160]}")
+            except Exception as e:
+                logger.warning(f"Gemini ({model_name}) error for '{title}': {e}")
 
     return None

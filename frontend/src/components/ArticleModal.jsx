@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useMemo } from "react";
-import { X, ExternalLink, Clock, Calendar, CheckCircle2, Bookmark, Award } from "lucide-react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { X, ExternalLink, Clock, Calendar, CheckCircle2, Bookmark, Award, ThumbsUp, Sparkles } from "lucide-react";
 import { getArticleCoverImage } from "../utils/imageUtils";
 
 export const ArticleModal = ({
@@ -7,9 +7,29 @@ export const ArticleModal = ({
   onClose,
   onToggleRead,
   onToggleBookmark,
+  onUpvote,
   onTakeQuiz,
+  onSelectArticle,
 }) => {
   const cardRef = useRef(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [loadingRecs, setLoadingRecs] = useState(false);
+
+  // Fetch local TF-IDF recommendations when article opens
+  useEffect(() => {
+    if (!article?.id) return;
+    setRecommendations([]);
+    setLoadingRecs(true);
+    fetch(`/api/articles/${article.id}/recommendations?limit=3`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.recommendations) {
+          setRecommendations(data.recommendations);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoadingRecs(false));
+  }, [article?.id]);
 
   // Lock body scroll and reset modal scroll to top when opened
   useEffect(() => {
@@ -209,6 +229,66 @@ export const ArticleModal = ({
           </div>
         )}
 
+        {/* Local AI: Content-Based Recommendations (TF-IDF + Cosine Similarity) */}
+        <div className="mt-8 pt-6 border-t-2 border-[var(--border-dim)] font-mono">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)] flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>RELATED ARTICLES</span>
+              <span className="text-[var(--ink-muted)] text-[9px] font-normal tracking-wider">(TF-IDF SIMILARITY)</span>
+            </p>
+          </div>
+
+          {loadingRecs ? (
+            <div className="text-[11px] text-[var(--ink-muted)] py-3 animate-pulse">
+              Computing content similarity matrix...
+            </div>
+          ) : recommendations.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {recommendations.map((rec) => (
+                <div
+                  key={rec.id}
+                  onClick={() => onSelectArticle && onSelectArticle(rec)}
+                  className="p-3 border border-[var(--border-dim)] hover:border-[var(--accent)] bg-[var(--bg)] cursor-pointer transition-all flex flex-col justify-between group shadow-sm"
+                  title="Click to view article"
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-[9px] text-[var(--accent)] mb-1.5 font-bold">
+                      <span className="uppercase tracking-wider">{rec.category?.replace(/-/g, " ")}</span>
+                      {rec.matchPercentage > 0 && (
+                        <span className="bg-[var(--accent)]/10 text-[var(--accent)] px-1 py-0.5 border border-[var(--accent)]/30 text-[8px]">
+                          {rec.matchPercentage}% MATCH
+                        </span>
+                      )}
+                    </div>
+                    <h5 className="font-display text-xs font-bold text-[var(--ink)] group-hover:text-[var(--accent)] line-clamp-2 leading-tight transition-colors">
+                      {rec.title}
+                    </h5>
+                    {rec.matchedKeywords && rec.matchedKeywords.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {rec.matchedKeywords.slice(0, 3).map((kw, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[8px] font-mono text-[var(--accent)] bg-[var(--accent)]/5 px-1 py-0.5 border border-[var(--accent)]/20"
+                          >
+                            #{kw}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2.5 pt-2 border-t border-[var(--border-dim)] flex items-center justify-between text-[9px] text-[var(--ink-muted)]">
+                    <span className="truncate max-w-[120px]">{rec.source}</span>
+                    <span className="text-[var(--accent)] font-bold group-hover:translate-x-0.5 transition-transform">READ →</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[10px] text-[var(--ink-muted)]">No related articles found.</p>
+          )}
+        </div>
+
         {/* Footer Actions */}
         <div className="mt-8 pt-6 border-t-2 border-[var(--border-dim)] flex flex-wrap items-center justify-between gap-4 font-mono">
           {onTakeQuiz && (
@@ -226,6 +306,18 @@ export const ArticleModal = ({
           )}
 
           <div className="flex items-center gap-3 ml-auto">
+            {onUpvote && (
+              <button
+                type="button"
+                onClick={() => onUpvote(article.id)}
+                className="border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
+                title="Upvote this article"
+              >
+                <ThumbsUp className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <span>UPVOTE ({article.upvotes || 0})</span>
+              </button>
+            )}
+
             <a
               href={article.sourceUrl}
               target="_blank"

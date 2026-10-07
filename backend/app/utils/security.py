@@ -105,3 +105,43 @@ async def get_optional_user(
 
     result = await db.execute(select(User).where(User.id == user_id))
     return result.scalar_one_or_none()
+
+
+async def require_admin(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    FastAPI dependency that enforces admin-only access.
+    Reads the 'role' claim from the JWT — no extra DB query needed.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    forbidden_exception = HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required.",
+    )
+
+    if not credentials or not credentials.credentials:
+        raise credentials_exception
+
+    payload = decode_access_token(credentials.credentials)
+    if not payload:
+        raise credentials_exception
+
+    if payload.get("role") != "admin":
+        raise forbidden_exception
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise credentials_exception
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise credentials_exception
+
+    return user

@@ -8,6 +8,8 @@ from app.models.database import init_db, engine, AsyncSessionLocal
 from app.controllers.auth_controller import router as auth_router
 from app.controllers.health_controller import router as health_router
 from app.controllers.article_controller import router as article_router, execute_article_sync
+from app.controllers.admin_controller import router as admin_router
+from app.controllers.analytics_controller import router as analytics_router
 
 
 async def periodic_article_sync():
@@ -116,6 +118,8 @@ async def global_exception_handler(request, exc: Exception):
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(article_router)
+app.include_router(admin_router)
+app.include_router(analytics_router)
 
 
 @app.get("/")

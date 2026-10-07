@@ -26,6 +26,7 @@ export const ArticleFeed = ({
   onOpenArticle,
   onToggleRead,
   onToggleBookmark,
+  onUpvote,
   onTakeQuiz,
   onCreateArticle,
 }) => {
@@ -41,6 +42,7 @@ export const ArticleFeed = ({
   const [appliedTimeRange, setAppliedTimeRange] = useState(0);
   const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
   const [onlyBookmarks, setOnlyBookmarks] = useState(false);
+  const [sortMode, setSortMode] = useState("for-you");
 
   // Pagination / Load More state (show 15 articles initially)
   const [visibleCount, setVisibleCount] = useState(15);
@@ -121,6 +123,7 @@ export const ArticleFeed = ({
     setAppliedTimeRange(0);
     setAppliedSearchQuery("");
     setOnlyBookmarks(false);
+    setSortMode("for-you");
     setVisibleCount(15);
   };
 
@@ -132,9 +135,9 @@ export const ArticleFeed = ({
     setVisibleCount(15);
   };
 
-  // Filtered articles list
+  // Filtered & sorted articles list
   const filteredArticles = useMemo(() => {
-    return articles.filter((art) => {
+    const base = articles.filter((art) => {
       // Category filter: match chosen category or limit to user-subscribed topics when 'all'
       if (appliedCategory !== "all") {
         if (art.category !== appliedCategory) {
@@ -177,6 +180,60 @@ export const ArticleFeed = ({
       }
       return true;
     });
+
+    const sorted = [...base];
+    if (sortMode === "popular") {
+      sorted.sort(
+        (a, b) =>
+          (b.upvotes || 0) - (a.upvotes || 0) ||
+          (b.relevanceScore || 0) - (a.relevanceScore || 0)
+      );
+    } else if (sortMode === "newest") {
+      sorted.sort(
+        (a, b) =>
+          new Date(b.publishedAt || b.published_at || 0).getTime() -
+          new Date(a.publishedAt || a.published_at || 0).getTime()
+      );
+    } else if (sortMode === "discussed") {
+      sorted.sort(
+        (a, b) =>
+          (b.commentsCount || 0) - (a.commentsCount || 0) ||
+          (b.upvotes || 0) - (a.upvotes || 0)
+      );
+    } else {
+      // "for-you": Combine backend hybrid ordering with live session skill/category affinity
+      const engaged = articles.filter((a) => a.isRead || a.isBookmarked);
+      if (engaged.length > 0) {
+        const skillWeights = {};
+        const catWeights = {};
+        engaged.forEach((a) => {
+          const w = a.isBookmarked ? 2 : 1;
+          if (a.category) catWeights[a.category] = (catWeights[a.category] || 0) + w;
+          (a.skillsExtracted || []).forEach((s) => {
+            const k = s.toLowerCase();
+            skillWeights[k] = (skillWeights[k] || 0) + w;
+          });
+        });
+        const maxCat = Math.max(1, ...Object.values(catWeights));
+        const maxSkill = Math.max(1, ...Object.values(skillWeights));
+
+        const scoreFor = (art) => {
+          const rel = art.relevanceScore || 0.7;
+          const catAff = (catWeights[art.category] || 0) / maxCat;
+          const skills = art.skillsExtracted || [];
+          const skillAff =
+            skills.length > 0
+              ? skills.reduce((acc, s) => acc + (skillWeights[s.toLowerCase()] || 0) / maxSkill, 0) /
+                Math.min(skills.length, 3)
+              : 0;
+          const unreadBoost = art.isRead ? 0 : 0.03;
+          return 0.45 * rel + 0.30 * Math.min(1, skillAff) + 0.25 * catAff + unreadBoost;
+        };
+        sorted.sort((a, b) => scoreFor(b) - scoreFor(a));
+      }
+    }
+
+    return sorted;
   }, [
     articles,
     appliedCategory,
@@ -185,6 +242,7 @@ export const ArticleFeed = ({
     appliedTimeRange,
     onlyBookmarks,
     appliedSearchQuery,
+    sortMode,
   ]);
 
   // Featured article (first unread or first overall)
@@ -506,7 +564,7 @@ export const ArticleFeed = ({
 
       {/* 4. Recommended Articles Grid & Load More */}
       <section id="recommended-articles-section" className="space-y-6">
-        <div className="flex items-center justify-between border-b-2 border-[var(--border-dim)] pb-3 font-mono">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-[var(--border-dim)] pb-4 font-mono">
           <div>
             <h3 className="font-display text-2xl sm:text-3xl font-extrabold text-[var(--ink)]">
               Recommended Articles
@@ -515,11 +573,42 @@ export const ArticleFeed = ({
               Select any article to view executive summaries, architecture impacts, and quiz assessments.
             </p>
           </div>
-          <span className="text-xs font-bold text-[var(--accent)]">
-            {isLoading
-              ? "[FETCHING...]"
-              : `[SHOWING ${totalDisplayed} OF ${filteredArticles.length} ARTICLES]`}
-          </span>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: "for-you", label: "FOR YOU", icon: Sparkles },
+              { id: "popular", label: "POPULAR" },
+              { id: "newest", label: "NEWEST" },
+              { id: "discussed", label: "DISCUSSED" },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = sortMode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  id={`btn-sort-${tab.id}`}
+                  type="button"
+                  onClick={() => {
+                    setSortMode(tab.id);
+                    setVisibleCount(15);
+                  }}
+                  className={`text-[11px] font-bold uppercase px-3 py-1.5 border transition-all flex items-center gap-1.5 cursor-pointer ${
+                    active
+                      ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)] shadow-sm"
+                      : "border-[var(--border-dim)] text-[var(--ink-muted)] hover:border-[var(--ink)] hover:text-[var(--ink)] bg-[var(--bg-surface)]"
+                  }`}
+                >
+                  {Icon && <Icon className="w-3 h-3" />}
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+            <span className="text-[11px] font-bold text-[var(--accent)] ml-2">
+              {isLoading
+                ? "[FETCHING...]"
+                : `[${totalDisplayed}/${filteredArticles.length}]`}
+            </span>
+          </div>
         </div>
 
         {isLoading ? (
@@ -578,6 +667,7 @@ export const ArticleFeed = ({
                   onOpenArticle={handleOpenArticle}
                   onToggleRead={onToggleRead}
                   onToggleBookmark={onToggleBookmark}
+                  onUpvote={onUpvote}
                   onTakeQuiz={onTakeQuiz}
                 />
               ))}
