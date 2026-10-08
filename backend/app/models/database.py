@@ -52,7 +52,25 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
+from sqlalchemy import inspect, text
+
+
+def _ensure_columns(sync_conn):
+    """Idempotently adds Phase 2/3 columns to existing tables if missing."""
+    inspector = inspect(sync_conn)
+    tables = inspector.get_table_names()
+    if "users" in tables:
+        user_cols = {c["name"] for c in inspector.get_columns("users")}
+        if "role" not in user_cols:
+            sync_conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user'"))
+    if "articles" in tables:
+        art_cols = {c["name"] for c in inspector.get_columns("articles")}
+        if "readability_score" not in art_cols:
+            sync_conn.execute(text("ALTER TABLE articles ADD COLUMN readability_score FLOAT NOT NULL DEFAULT 0.0"))
+
+
 async def init_db():
     """Initializes and creates all database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_ensure_columns)
