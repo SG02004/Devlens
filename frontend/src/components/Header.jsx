@@ -16,6 +16,8 @@ export const Header = ({
   onLogout,
   theme = "dark",
   onToggleTheme,
+  palette = "new",
+  onTogglePalette,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -103,6 +105,19 @@ export const Header = ({
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Palette Fallback Toggle (New vs Classic) */}
+            {onTogglePalette && (
+              <button
+                id="btn-palette-toggle-header"
+                type="button"
+                onClick={onTogglePalette}
+                className="border border-[var(--ink)]/40 hover:border-[var(--accent)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--accent)] px-2 sm:px-2.5 py-1.5 text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                title={palette === "new" ? "Fallback to Classic Scheme" : "Switch to New Scheme"}
+              >
+                <span>{palette === "new" ? "CLASSIC" : "NEW"}</span>
+              </button>
+            )}
+
             {/* Dark / Light Theme Toggle */}
             {onToggleTheme && (
               <button

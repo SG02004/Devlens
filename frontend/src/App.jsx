@@ -33,13 +33,27 @@ export default function App() {
     return saved === "light" ? "light" : "dark";
   });
 
+  const [palette, setPalette] = useState(() => {
+    const saved = localStorage.getItem("devlens.palette");
+    return saved === "classic" ? "classic" : "new";
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("devlens.theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    document.documentElement.setAttribute("data-palette", palette);
+    localStorage.setItem("devlens.palette", palette);
+  }, [palette]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  const togglePalette = () => {
+    setPalette((prev) => (prev === "new" ? "classic" : "new"));
   };
 
   // Fetch initial articles & profile from server on mount
@@ -192,23 +206,42 @@ export default function App() {
     }
   };
 
-  // Upvote Article (persist count to Supabase so it's visible to all users)
+  // Toggle Upvote (1 upvote per user, persisted in ReadEvent + Article)
   const handleUpvote = async (articleId) => {
+    const toggleArticleUpvote = (a) => {
+      const nextUpvoted = !a.isUpvoted;
+      const nextUpvotes = Math.max(0, (a.upvotes || 0) + (nextUpvoted ? 1 : -1));
+      return { ...a, isUpvoted: nextUpvoted, upvotes: nextUpvotes };
+    };
+
     setArticles((prev) =>
-      prev.map((a) => (a.id === articleId ? { ...a, upvotes: (a.upvotes || 0) + 1 } : a))
+      prev.map((a) => (a.id === articleId ? toggleArticleUpvote(a) : a))
     );
     if (activeDetailArticle && activeDetailArticle.id === articleId) {
-      setActiveDetailArticle((prev) => ({ ...prev, upvotes: (prev.upvotes || 0) + 1 }));
+      setActiveDetailArticle((prev) => toggleArticleUpvote(prev));
     }
     try {
-      const res = await fetch(`/api/articles/${articleId}/upvote`, { method: "POST" });
+      const token = localStorage.getItem("devlens.auth_token");
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/articles/${articleId}/upvote`, {
+        method: "POST",
+        headers,
+      });
       if (res.ok) {
         const data = await res.json();
         setArticles((prev) =>
-          prev.map((a) => (a.id === articleId ? { ...a, upvotes: data.upvotes } : a))
+          prev.map((a) =>
+            a.id === articleId
+              ? { ...a, upvotes: data.upvotes, isUpvoted: data.isUpvoted }
+              : a
+          )
         );
         if (activeDetailArticle && activeDetailArticle.id === articleId) {
-          setActiveDetailArticle((prev) => ({ ...prev, upvotes: data.upvotes }));
+          setActiveDetailArticle((prev) => ({
+            ...prev,
+            upvotes: data.upvotes,
+            isUpvoted: data.isUpvoted,
+          }));
         }
       }
     } catch {
@@ -375,6 +408,8 @@ export default function App() {
           onLogout={handleLogout}
           theme={theme}
           onToggleTheme={toggleTheme}
+          palette={palette}
+          onTogglePalette={togglePalette}
         />
       )}
 
@@ -385,6 +420,8 @@ export default function App() {
             onLoginSuccess={handleLoginSuccess}
             theme={theme}
             onToggleTheme={toggleTheme}
+            palette={palette}
+            onTogglePalette={togglePalette}
           />
         ) : activeTab === "admin" ? (
           <AdminPanel

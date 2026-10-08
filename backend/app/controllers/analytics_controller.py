@@ -25,7 +25,7 @@ from app.views.article_views import ArticleResponse
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
 EPOCH_SENTINEL = datetime(1970, 1, 1, tzinfo=timezone.utc)
-HEATMAP_DAYS = 105  # 15 weeks * 7 days
+HEATMAP_DAYS = 45  # Last 45 days
 
 
 def _compute_streaks(read_dates: Set[date], today: date) -> tuple[int, int]:

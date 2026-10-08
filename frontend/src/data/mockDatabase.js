@@ -44,7 +44,7 @@ export const INITIAL_ARTICLES = [
       "Verification is mathematically lossless: guaranteed sampling equivalence with original distribution.",
     ],
     skillsExtracted: ["Transformer Architecture", "GPU Memory Bandwidth", "KV Cache", "PyTorch", "vLLM", "Speculative Execution"],
-    upvotes: 412,
+    upvotes: 0,
     commentsCount: 68,
     isBookmarked: true,
   },
@@ -70,7 +70,7 @@ export const INITIAL_ARTICLES = [
       "Downstream consumers must implement idempotency keys to handle at-least-once semantics.",
     ],
     skillsExtracted: ["Apache Kafka", "PostgreSQL", "Transactional Outbox", "Microservices", "Event-Driven", "Debezium"],
-    upvotes: 284,
+    upvotes: 0,
     commentsCount: 39,
   },
   {
@@ -95,7 +95,7 @@ export const INITIAL_ARTICLES = [
       "Use `pool_pre_ping=True` to prune dead connections before handing them to active coroutines.",
     ],
     skillsExtracted: ["Python 3.13", "FastAPI", "SQLAlchemy 2.0 Async", "asyncpg", "Connection Pooling", "PostgreSQL"],
-    upvotes: 567,
+    upvotes: 0,
     commentsCount: 142,
     isBookmarked: false,
   },
@@ -121,7 +121,7 @@ export const INITIAL_ARTICLES = [
       "Verifier smart contracts on Layer 1 confirm algebraic polynomial identity satisfaction in constant time.",
     ],
     skillsExtracted: ["Zero-Knowledge Proofs", "Cryptography", "Polynomial Commitments", "zk-SNARKs", "STARKs", "Data Availability"],
-    upvotes: 319,
+    upvotes: 0,
     commentsCount: 51,
   },
   {
@@ -146,7 +146,7 @@ export const INITIAL_ARTICLES = [
       "Multi-tenant cluster policies enforced via Kyverno or OPA Gatekeeper prevent privilege escalation.",
     ],
     skillsExtracted: ["Kubernetes", "ArgoCD", "GitOps", "Docker", "Prometheus", "CI/CD Pipelines", "Helm"],
-    upvotes: 245,
+    upvotes: 0,
     commentsCount: 31,
   },
   {
@@ -171,7 +171,7 @@ export const INITIAL_ARTICLES = [
       "Standard client state is streamlined without over-architecting Redux or heavy global stores.",
     ],
     skillsExtracted: ["React 19", "JavaScript", "Vite", "Server Actions", "Optimistic UI", "Web Performance"],
-    upvotes: 689,
+    upvotes: 0,
     commentsCount: 215,
   },
 ];

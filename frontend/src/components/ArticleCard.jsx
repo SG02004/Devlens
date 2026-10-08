@@ -141,10 +141,18 @@ export const ArticleCard = ({
                 e.stopPropagation();
                 onUpvote(article.id);
               }}
-              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2 sm:px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 sm:gap-1.5 cursor-pointer bg-[var(--bg-surface)] text-[var(--ink)]"
-              title="Upvote this article (visible to everyone)"
+              className={`border px-2 sm:px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
+                article.isUpvoted
+                  ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)]"
+                  : "border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] bg-[var(--bg-surface)] text-[var(--ink)]"
+              }`}
+              title={article.isUpvoted ? "Remove upvote" : "Upvote this article"}
             >
-              <ThumbsUp className="w-3 h-3 text-[var(--accent)]" />
+              <ThumbsUp
+                className={`w-3 h-3 ${
+                  article.isUpvoted ? "text-[#111113] fill-current" : "text-[var(--accent)]"
+                }`}
+              />
               <span>{article.upvotes || 0}</span>
             </button>
           )}

@@ -27,3 +27,5 @@ class ReadEvent(Base):
     )
     quiz_score: Mapped[float] = mapped_column(Float, nullable=True)
     is_bookmarked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_upvoted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+

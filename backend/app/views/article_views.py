@@ -25,6 +25,7 @@ class ArticleResponse(BaseModel):
     readability_score: float = Field(0.0, alias="readabilityScore")
     is_bookmarked: bool = Field(False, alias="isBookmarked")
     is_read: bool = Field(False, alias="isRead")
+    is_upvoted: bool = Field(False, alias="isUpvoted")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -32,7 +33,13 @@ class ArticleResponse(BaseModel):
     )
 
     @classmethod
-    def from_orm_article(cls, article, is_bookmarked: bool = False, is_read: bool = False):
+    def from_orm_article(
+        cls,
+        article,
+        is_bookmarked: bool = False,
+        is_read: bool = False,
+        is_upvoted: bool = False,
+    ):
         return cls(
             id=article.id,
             title=article.title,
@@ -55,6 +62,7 @@ class ArticleResponse(BaseModel):
             readability_score=getattr(article, "readability_score", 0.0),
             is_bookmarked=is_bookmarked,
             is_read=is_read,
+            is_upvoted=is_upvoted,
         )
 
 

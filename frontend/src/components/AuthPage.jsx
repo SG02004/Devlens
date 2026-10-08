@@ -8,6 +8,8 @@ export const AuthPage = ({
   onLoginSuccess,
   theme = "dark",
   onToggleTheme,
+  palette = "new",
+  onTogglePalette,
 }) => {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -125,9 +127,20 @@ export const AuthPage = ({
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-center py-4 sm:py-10 px-1 sm:px-4">
-      {/* Top Floating Controls: Dark / Light Mode Switch */}
+      {/* Top Floating Controls: Dark / Light Mode & Palette Switch */}
       {onToggleTheme && (
-        <div className="flex justify-end mb-4 sm:mb-0 sm:absolute sm:top-2 sm:right-6 z-20">
+        <div className="flex justify-end gap-2 mb-4 sm:mb-0 sm:absolute sm:top-2 sm:right-6 z-20">
+          {onTogglePalette && (
+            <button
+              id="btn-palette-toggle-auth"
+              type="button"
+              onClick={onTogglePalette}
+              className="border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-3 sm:px-3.5 py-1.5 text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+              title={palette === "new" ? "Fallback to Classic Scheme" : "Switch to New Scheme"}
+            >
+              <span>{palette === "new" ? "CLASSIC SCHEME" : "NEW SCHEME"}</span>
+            </button>
+          )}
           <button
             id="btn-theme-toggle-auth"
             type="button"

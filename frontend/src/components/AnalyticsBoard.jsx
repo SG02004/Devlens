@@ -31,6 +31,32 @@ function getHeatmapCellStyle(reads) {
   return "bg-[var(--accent)] border-[var(--accent)]";
 }
 
+function getOrdinalSuffix(day) {
+  if (day > 3 && day < 21) return "th";
+  switch (day % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    default:
+      return "th";
+  }
+}
+
+function formatStreakTooltip(dateStr, reads = 0) {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  if (!year || !month || !day) return `${reads || 0} read articles on ${dateStr}`;
+  const monthName = new Date(Date.UTC(year, month - 1, day)).toLocaleString("en-US", {
+    month: "long",
+    timeZone: "UTC",
+  });
+  const count = reads || 0;
+  return `${count} read ${count === 1 ? "article" : "articles"} on ${monthName} ${day}${getOrdinalSuffix(day)}`;
+}
+
 export const AnalyticsBoard = ({
   username,
   articles = [],
@@ -192,14 +218,16 @@ export const AnalyticsBoard = ({
       .map(([skill, count]) => ({ skill, count }));
   }, [serverAnalytics, readArticles]);
 
-  // 105-day heatmap cells (15 weeks x 7 days)
+  // 45-day heatmap cells
+  const [hoveredStreakCell, setHoveredStreakCell] = useState(null);
+
   const heatmapCells = useMemo(() => {
-    if (serverAnalytics?.heatmap?.length === 105) {
-      return serverAnalytics.heatmap;
+    if (serverAnalytics?.heatmap?.length >= 45) {
+      return serverAnalytics.heatmap.slice(-45);
     }
     const today = new Date();
     const cells = [];
-    for (let i = 104; i >= 0; i--) {
+    for (let i = 44; i >= 0; i--) {
       const d = new Date(today);
       d.setUTCDate(today.getUTCDate() - i);
       const iso = d.toISOString().slice(0, 10);
@@ -317,7 +345,7 @@ export const AnalyticsBoard = ({
         </article>
       </section>
 
-      {/* 3. 15-Week Reading Streak Heatmap + Developer Skill ID Cloud */}
+      {/* 3. 45-Day Reading Streak Heatmap + Developer Skill ID Cloud */}
       <section className="grid gap-6 lg:grid-cols-[1.25fr_1fr] font-mono">
         {/* Streak Heatmap */}
         <article className="card p-6 sm:p-8 border-2 border-[var(--ink)] bg-[var(--bg-surface)] space-y-5 shadow-sm">
@@ -328,7 +356,7 @@ export const AnalyticsBoard = ({
                 <span>Reading Streak Matrix</span>
               </h2>
               <p className="text-xs text-[var(--ink-muted)] mt-1">
-                Last 15 weeks (105 days) of engineering reading consistency (UTC)
+                Last 45 days of engineering reading consistency (UTC)
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -338,24 +366,38 @@ export const AnalyticsBoard = ({
             </div>
           </div>
 
-          {/* 15 columns x 7 rows pure CSS Grid */}
-          <div className="overflow-x-auto py-2">
-            <div className="grid grid-rows-7 grid-flow-col gap-1.5 w-max min-w-full justify-between">
-              {heatmapCells.map((cell) => (
-                <div
-                  key={cell.date}
-                  title={`${cell.date}: ${cell.reads} article${cell.reads === 1 ? "" : "s"} read`}
-                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 border transition-transform hover:scale-125 ${getHeatmapCellStyle(
-                    cell.reads
-                  )}`}
-                />
-              ))}
+          {/* 9 columns x 5 rows (45 days) CSS Grid */}
+          <div className="py-2">
+            <div className="grid grid-rows-5 grid-flow-col gap-2 sm:gap-2.5 w-full justify-between">
+              {heatmapCells.map((cell) => {
+                const tooltipText = formatStreakTooltip(cell.date, cell.reads);
+                return (
+                  <div
+                    key={cell.date}
+                    title={tooltipText}
+                    onMouseEnter={() => setHoveredStreakCell(tooltipText)}
+                    onMouseLeave={() => setHoveredStreakCell(null)}
+                    className="group relative flex items-center justify-center"
+                  >
+                    <div
+                      className={`w-5 h-5 sm:w-6 sm:h-6 border transition-transform group-hover:scale-125 cursor-pointer ${getHeatmapCellStyle(
+                        cell.reads
+                      )}`}
+                    />
+                    <span className="pointer-events-none hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-[var(--ink)] text-[var(--bg)] border border-[var(--bg)] text-[10px] font-mono font-bold whitespace-nowrap z-30 shadow-lg">
+                      {tooltipText}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 text-[10px] text-[var(--ink-muted)] uppercase tracking-wider">
-            <span>105-DAY HORIZON</span>
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 text-[10px] text-[var(--ink-muted)] uppercase tracking-wider">
+            <span className="normal-case font-semibold text-[var(--ink)]">
+              {hoveredStreakCell || "45-DAY HORIZON"}
+            </span>
+            <div className="flex items-center gap-1.5 ml-auto">
               <span>LESS</span>
               {[0, 1, 2, 3, 4].map((lvl) => (
                 <span

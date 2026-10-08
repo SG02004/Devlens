@@ -55,9 +55,10 @@ async def get_articles_feed(
     total_result = await db.execute(count_query)
     total_count = total_result.scalar_one() or 0
 
-    # Load user's read & bookmark state
+    # Load user's read, bookmark & upvote state
     read_ids = set()
     bookmarked_ids = set()
+    upvoted_ids = set()
     user_events_with_articles = []
 
     if current_user:
@@ -74,6 +75,8 @@ async def get_articles_feed(
                 read_ids.add(ev.article_id)
             if ev.is_bookmarked:
                 bookmarked_ids.add(ev.article_id)
+            if getattr(ev, "is_upvoted", False):
+                upvoted_ids.add(ev.article_id)
             if art is not None and len(user_events_with_articles) < 100:
                 user_events_with_articles.append((ev, art))
 
@@ -108,6 +111,7 @@ async def get_articles_feed(
             a,
             is_bookmarked=(a.id in bookmarked_ids),
             is_read=(a.id in read_ids),
+            is_upvoted=(a.id in upvoted_ids),
         )
         for a in articles
     ]
@@ -140,6 +144,7 @@ async def get_article_by_id(
 
     is_read = False
     is_bookmarked = False
+    is_upvoted = False
     if current_user:
         ev = (
             await db.execute(
@@ -152,8 +157,14 @@ async def get_article_by_id(
         if ev:
             is_read = _ensure_utc(ev.read_at, EPOCH_SENTINEL) > READ_CUTOFF
             is_bookmarked = bool(ev.is_bookmarked)
+            is_upvoted = bool(getattr(ev, "is_upvoted", False))
 
-    return ArticleResponse.from_orm_article(article, is_bookmarked=is_bookmarked, is_read=is_read)
+    return ArticleResponse.from_orm_article(
+        article,
+        is_bookmarked=is_bookmarked,
+        is_read=is_read,
+        is_upvoted=is_upvoted,
+    )
 
 
 @router.post("/{article_id}/toggle-read")
@@ -164,7 +175,7 @@ async def toggle_read_article(
 ):
     """
     Persists or toggles read status for an article via ReadEvent.
-    Updates User.read_count and preserves bookmark status if present.
+    Updates User.read_count and preserves bookmark/upvote status if present.
     """
     article = (await db.execute(select(Article).where(Article.id == article_id))).scalar_one_or_none()
     if not article:
@@ -186,6 +197,7 @@ async def toggle_read_article(
             article_id=article_id,
             read_at=now,
             is_bookmarked=False,
+            is_upvoted=False,
         )
         db.add(ev)
         is_read = True
@@ -193,10 +205,10 @@ async def toggle_read_article(
     else:
         was_read = _ensure_utc(ev.read_at, EPOCH_SENTINEL) > READ_CUTOFF
         if was_read:
-            if ev.is_bookmarked:
+            if ev.is_bookmarked or getattr(ev, "is_upvoted", False):
                 ev.read_at = EPOCH_SENTINEL
                 is_read = False
-                is_bookmarked = True
+                is_bookmarked = bool(ev.is_bookmarked)
             else:
                 await db.delete(ev)
                 is_read = False
@@ -253,6 +265,7 @@ async def toggle_bookmark_article(
             article_id=article_id,
             read_at=EPOCH_SENTINEL,
             is_bookmarked=True,
+            is_upvoted=False,
         )
         db.add(ev)
         is_read = False
@@ -260,9 +273,9 @@ async def toggle_bookmark_article(
     else:
         was_read = _ensure_utc(ev.read_at, EPOCH_SENTINEL) > READ_CUTOFF
         if ev.is_bookmarked:
-            if was_read:
+            if was_read or getattr(ev, "is_upvoted", False):
                 ev.is_bookmarked = False
-                is_read = True
+                is_read = was_read
                 is_bookmarked = False
             else:
                 await db.delete(ev)
@@ -286,10 +299,11 @@ async def toggle_bookmark_article(
 async def upvote_article(
     article_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Atomically increments the upvote count for an article.
-    Persisted to PostgreSQL so all users immediately see updated upvote totals.
+    Toggles the authenticated user's upvote for an article (max 1 upvote per user).
+    Recomputes the exact upvote count from ReadEvent so counts are always accurate.
     """
     query = select(Article).where(Article.id == article_id)
     result = await db.execute(query)
@@ -301,14 +315,52 @@ async def upvote_article(
             detail="Article not found",
         )
 
-    article.upvotes = (article.upvotes or 0) + 1
+    ev = (
+        await db.execute(
+            select(ReadEvent).where(
+                ReadEvent.user_id == current_user.id,
+                ReadEvent.article_id == article_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    if ev is None:
+        ev = ReadEvent(
+            user_id=current_user.id,
+            article_id=article_id,
+            read_at=EPOCH_SENTINEL,
+            is_bookmarked=False,
+            is_upvoted=True,
+        )
+        db.add(ev)
+        is_upvoted = True
+    else:
+        was_read = _ensure_utc(ev.read_at, EPOCH_SENTINEL) > READ_CUTOFF
+        if getattr(ev, "is_upvoted", False):
+            if was_read or ev.is_bookmarked:
+                ev.is_upvoted = False
+            else:
+                await db.delete(ev)
+            is_upvoted = False
+        else:
+            ev.is_upvoted = True
+            is_upvoted = True
+
+    await db.flush()
+
+    upvote_count_q = (
+        select(func.count())
+        .select_from(ReadEvent)
+        .where(ReadEvent.article_id == article_id, ReadEvent.is_upvoted == True)  # noqa: E712
+    )
+    article.upvotes = (await db.execute(upvote_count_q)).scalar_one() or 0
     await db.commit()
-    await db.refresh(article)
 
     return {
         "id": article.id,
         "upvotes": article.upvotes,
-        "message": f"Article upvoted successfully. Total: {article.upvotes}",
+        "isUpvoted": is_upvoted,
+        "message": f"Article upvote {'added' if is_upvoted else 'removed'}. Total: {article.upvotes}",
     }
 
 

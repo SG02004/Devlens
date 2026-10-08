@@ -153,7 +153,7 @@ def calculate_quality_score(
     else:
         content_substance = 0.40
 
-    engagement = min(upvotes / 100.0, 1.0)
+    engagement = min(upvotes / 100.0, 1.0) if upvotes > 0 else 0.5
 
     score = (freshness * 0.35) + (source_weight * 0.40) + (content_substance * 0.15) + (engagement * 0.10)
     return round(min(score, 0.99), 3)
@@ -227,7 +227,7 @@ async def fetch_devto_articles(category: str, limit: int = 5) -> List[Dict[str, 
                         "why_it_matters": f"Trending community post in {category.replace('-', ' ').title()} with active developer engagement.",
                         "key_takeaways": [tag.strip() for tag in item.get("tag_list", []) if tag][:4],
                         "skills_extracted": item.get("tag_list", [])[:5],
-                        "upvotes": upvotes,
+                        "upvotes": 0,
                         "comments_count": item.get("comments_count", 0),
                         "relevance_score": rel_score,
                     })
@@ -272,7 +272,7 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
                 published_at=published_at,
                 title=title,
                 summary=summary,
-                upvotes=25,
+                upvotes=0,
             )
 
             articles.append({
@@ -293,7 +293,7 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
                     f"Domain category: {category.replace('-', ' ').title()}",
                 ],
                 "skills_extracted": [category.replace("-", " ").title(), source_name],
-                "upvotes": 25,
+                "upvotes": 0,
                 "comments_count": 0,
                 "relevance_score": rel_score,
             })

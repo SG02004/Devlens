@@ -5,7 +5,46 @@
   --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
+/* ==========================================================================
+   NEW COLOR SCHEME (Default)
+   Dark Theme:  #010736 | #0D1C42 | #22396F | #FCF1D0
+                rgb(1, 7, 54) | rgb(13, 28, 66) | rgb(34, 57, 111) | rgb(252, 241, 208)
+   Light Theme: #FAF8F1 | #FAEAB1 | #E5BA73 | #C58940 (Off-White & Warm Amber)
+   ========================================================================== */
 :root {
+  --bg: #010736; /* rgb(1, 7, 54) */
+  --bg-surface: #0D1C42; /* rgb(13, 28, 66) */
+  --bg-elevated: #22396F; /* rgb(34, 57, 111) */
+  --ink: #FCF1D0; /* rgb(252, 241, 208) */
+  --ink-muted: rgba(252, 241, 208, 0.72);
+  --accent: #FCF1D0; /* rgb(252, 241, 208) */
+  --accent-muted: rgba(34, 57, 111, 0.65); /* rgb(34, 57, 111) */
+  --border: rgba(252, 241, 208, 0.85);
+  --border-dim: #22396F; /* rgb(34, 57, 111) */
+  --top-nav-bg: rgba(1, 7, 54, 0.95);
+  --modal-backdrop-bg: rgba(1, 7, 54, 0.88);
+  --font-display: "Syne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+[data-theme="light"], .light {
+  --bg: #FAF8F1;
+  --bg-surface: #FAF8F1;
+  --bg-elevated: #FAEAB1;
+  --ink: #2C1E10;
+  --ink-muted: #785937;
+  --accent: #C58940;
+  --accent-muted: rgba(250, 234, 177, 0.65);
+  --border: rgba(44, 30, 16, 0.85);
+  --border-dim: #E5BA73;
+  --top-nav-bg: rgba(250, 248, 241, 0.95);
+  --modal-backdrop-bg: rgba(44, 30, 16, 0.5);
+}
+
+/* ==========================================================================
+   PREVIOUS COLOR SCHEME FALLBACK ([data-palette="classic"])
+   ========================================================================== */
+[data-palette="classic"] {
   --bg: #111113;
   --bg-surface: #17171a;
   --bg-elevated: #202024;
@@ -17,11 +56,10 @@
   --border-dim: rgba(248, 247, 244, 0.2);
   --top-nav-bg: rgba(17, 17, 19, 0.95);
   --modal-backdrop-bg: rgba(17, 17, 19, 0.88);
-  --font-display: "Syne", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-[data-theme="light"], .light {
+[data-palette="classic"][data-theme="light"],
+[data-palette="classic"].light {
   --bg: #F5F4F0;
   --bg-surface: #FFFFFF;
   --bg-elevated: #ECEAE4;

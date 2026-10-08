@@ -310,11 +310,19 @@ export const ArticleModal = ({
               <button
                 type="button"
                 onClick={() => onUpvote(article.id)}
-                className="flex-1 sm:flex-initial justify-center border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer"
-                title="Upvote this article"
+                className={`flex-1 sm:flex-initial justify-center border px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer ${
+                  article.isUpvoted
+                    ? "bg-[var(--accent)] text-[#111113] border-[var(--accent)]"
+                    : "border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)]"
+                }`}
+                title={article.isUpvoted ? "Remove upvote" : "Upvote this article"}
               >
-                <ThumbsUp className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
-                <span>UPVOTE ({article.upvotes || 0})</span>
+                <ThumbsUp
+                  className={`w-3.5 h-3.5 shrink-0 ${
+                    article.isUpvoted ? "text-[#111113] fill-current" : "text-[var(--accent)]"
+                  }`}
+                />
+                <span>{article.isUpvoted ? "UPVOTED" : "UPVOTE"} ({article.upvotes || 0})</span>
               </button>
             )}
 
