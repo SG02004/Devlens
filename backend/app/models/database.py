@@ -57,6 +57,11 @@ from sqlalchemy import inspect, text
 
 def _ensure_columns(sync_conn):
     """Idempotently adds Phase 2/3 columns to existing tables if missing."""
+    if "sqlite" not in db_url:
+        sync_conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user'"))
+        sync_conn.execute(text("ALTER TABLE articles ADD COLUMN IF NOT EXISTS readability_score FLOAT NOT NULL DEFAULT 0.0"))
+        return
+
     inspector = inspect(sync_conn)
     tables = inspector.get_table_names()
     if "users" in tables:
@@ -70,7 +75,39 @@ def _ensure_columns(sync_conn):
 
 
 async def init_db():
-    """Initializes and creates all database tables."""
+    """Initializes and creates all database tables and ensures default admin exists."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(_ensure_columns)
+
+    from sqlalchemy import select, or_
+    from app.models.user import User
+    from app.utils.security import hash_password, verify_password
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User).where(or_(User.email == "admin@devlens.local", User.username == "devlens_admin"))
+        )
+        admin_user = result.scalar_one_or_none()
+        if not admin_user:
+            session.add(
+                User(
+                    email="admin@devlens.local",
+                    username="devlens_admin",
+                    name="DevLens Admin",
+                    hashed_password=hash_password("admin@1691"),
+                    role="admin",
+                )
+            )
+            await session.commit()
+        else:
+            changed = False
+            if admin_user.role != "admin":
+                admin_user.role = "admin"
+                changed = True
+            if not verify_password("admin@1691", admin_user.hashed_password):
+                admin_user.hashed_password = hash_password("admin@1691")
+                changed = True
+            if changed:
+                await session.commit()
+

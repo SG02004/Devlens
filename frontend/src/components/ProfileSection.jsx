@@ -64,28 +64,28 @@ export const ProfileSection = ({
   return (
     <div id="profile-section-view" className="w-full space-y-8 animate-fade-in-up text-left">
       {/* 1. Profile Header & Essential Info */}
-      <section className="card p-6 sm:p-10 border-2 border-[var(--ink)] bg-[var(--bg-surface)] space-y-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex items-center gap-5">
+      <section className="card p-4 sm:p-10 border-2 border-[var(--ink)] bg-[var(--bg-surface)] space-y-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 sm:gap-6">
+          <div className="flex items-center gap-3.5 sm:gap-5 min-w-0">
             {/* Avatar Circle */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-[var(--ink)] bg-[var(--accent)] text-[#111113] flex items-center justify-center font-display text-2xl sm:text-3xl font-extrabold shadow-sm shrink-0">
+            <div className="w-14 h-14 sm:w-20 sm:h-20 border-2 border-[var(--ink)] bg-[var(--accent)] text-[#111113] flex items-center justify-center font-display text-xl sm:text-3xl font-extrabold shadow-sm shrink-0">
               {(userProfile.name || "U")[0].toUpperCase()}
             </div>
 
-            <div>
+            <div className="min-w-0">
               <div className="meta-tag mb-1.5">Engineer Profile</div>
-              <h1 className="font-display text-2xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight m-0">
+              <h1 className="font-display text-xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight m-0 break-words">
                 {userProfile.name}
               </h1>
-              <p className="font-mono text-xs sm:text-sm text-[var(--ink-muted)] mt-1 flex items-center gap-2">
+              <p className="font-mono text-xs sm:text-sm text-[var(--ink-muted)] mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 break-all sm:break-normal">
                 <span>{userProfile.email}</span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span className="text-[var(--accent)] font-bold">{userProfile.program || "Systems Engineering"}</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 font-mono text-xs">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 font-mono text-xs w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
@@ -93,7 +93,7 @@ export const ProfileSection = ({
                 setEditName(userProfile.name);
                 setEditEmail(userProfile.email);
               }}
-              className="border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-4 py-2 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+              className="flex-1 sm:flex-initial justify-center border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-3.5 sm:px-4 py-2 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>{isEditingInfo ? "CANCEL" : "EDIT PROFILE"}</span>
@@ -102,7 +102,7 @@ export const ProfileSection = ({
             <button
               type="button"
               onClick={onLogout}
-              className="border border-rose-500 text-rose-500 hover:bg-rose-500/10 px-4 py-2 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+              className="flex-1 sm:flex-initial justify-center border border-rose-500 text-rose-500 hover:bg-rose-500/10 px-3.5 sm:px-4 py-2 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>SIGN OUT</span>

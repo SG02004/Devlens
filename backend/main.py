@@ -41,8 +41,11 @@ async def lifespan(app: FastAPI):
     Initializes database tables and starts background sync on startup.
     """
     print("[DevLens] Initializing database tables...")
-    await init_db()
-    print("[DevLens] Database tables initialized successfully.")
+    try:
+        await init_db()
+        print("[DevLens] Database tables initialized successfully.")
+    except Exception as e:
+        print(f"[DevLens] Warning during database init: {e}")
 
     # Start automated background sync task
     sync_task = asyncio.create_task(periodic_article_sync())
@@ -84,7 +87,7 @@ ALLOWED_ORIGINS = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"https://.*\.up\.railway\.app",
+    allow_origin_regex=r"^(https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?|https://.*\.up\.railway\.app)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

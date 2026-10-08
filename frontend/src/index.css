@@ -44,9 +44,11 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-mono);
@@ -58,6 +60,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 select option {
@@ -167,7 +170,7 @@ input, select, textarea {
 /* Buttons */
 .btn-primary {
   width: 100%;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem 1.25rem;
   background: var(--ink);
   color: var(--bg);
   border: 2px solid var(--ink);
@@ -211,13 +214,22 @@ input, select, textarea {
   border: 1px solid transparent;
   color: var(--ink-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 0.5rem 0.9rem;
+  padding: 0.45rem 0.65rem;
+  white-space: nowrap;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+@media (min-width: 640px) {
+  .nav-tab {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    padding: 0.5rem 0.9rem;
+  }
 }
 
 .nav-tab:hover {
@@ -240,6 +252,7 @@ input, select, textarea {
   bottom: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 100;
   background: var(--modal-backdrop-bg);
   backdrop-filter: blur(8px);
@@ -247,14 +260,20 @@ input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.5rem;
   overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .modal-backdrop {
+    padding: 1rem;
+  }
 }
 
 .modal-card {
   max-width: 820px;
   width: 100%;
-  max-height: 88vh;
+  max-height: 92dvh;
   overflow-y: auto;
   border: 2px solid var(--ink);
   background: var(--bg-surface);

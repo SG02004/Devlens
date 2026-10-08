@@ -475,39 +475,39 @@ export const AnalyticsBoard = ({
               <span className="meta-tag-accent text-[10px]">TEXTSTAT NLP</span>
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-              <div className="border border-[var(--border-dim)] p-4 bg-[var(--bg)]">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--ink-muted)] block">
+            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3 text-center">
+              <div className="border border-[var(--border-dim)] p-2.5 sm:p-4 bg-[var(--bg)] min-w-0">
+                <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider sm:tracking-widest text-[var(--ink-muted)] block truncate">
                   BEGINNER
                 </span>
-                <span className="font-display text-3xl font-extrabold text-[var(--ink)] mt-2 block">
+                <span className="font-display text-xl sm:text-3xl font-extrabold text-[var(--ink)] mt-1.5 sm:mt-2 block">
                   {beginnerCount}
                 </span>
-                <span className="text-[9px] text-[var(--ink-muted)]">
+                <span className="text-[8px] sm:text-[9px] text-[var(--ink-muted)] block truncate">
                   Foundations
                 </span>
               </div>
 
-              <div className="border border-[var(--accent)]/50 p-4 bg-[var(--accent-muted)]">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--accent)] block">
+              <div className="border border-[var(--accent)]/50 p-2.5 sm:p-4 bg-[var(--accent-muted)] min-w-0">
+                <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider sm:tracking-widest text-[var(--accent)] block truncate">
                   INTERMEDIATE
                 </span>
-                <span className="font-display text-3xl font-extrabold text-[var(--accent)] mt-2 block">
+                <span className="font-display text-xl sm:text-3xl font-extrabold text-[var(--accent)] mt-1.5 sm:mt-2 block">
                   {intermediateCount}
                 </span>
-                <span className="text-[9px] text-[var(--ink-muted)]">
+                <span className="text-[8px] sm:text-[9px] text-[var(--ink-muted)] block truncate">
                   Architectures
                 </span>
               </div>
 
-              <div className="border border-[var(--border-dim)] p-4 bg-[var(--bg)]">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--ink-muted)] block">
+              <div className="border border-[var(--border-dim)] p-2.5 sm:p-4 bg-[var(--bg)] min-w-0">
+                <span className="text-[8px] sm:text-[10px] uppercase font-bold tracking-wider sm:tracking-widest text-[var(--ink-muted)] block truncate">
                   ADVANCED
                 </span>
-                <span className="font-display text-3xl font-extrabold text-[var(--ink)] mt-2 block">
+                <span className="font-display text-xl sm:text-3xl font-extrabold text-[var(--ink)] mt-1.5 sm:mt-2 block">
                   {advancedCount}
                 </span>
-                <span className="text-[9px] text-[var(--ink-muted)]">
+                <span className="text-[8px] sm:text-[9px] text-[var(--ink-muted)] block truncate">
                   RFCs & Preprints
                 </span>
               </div>

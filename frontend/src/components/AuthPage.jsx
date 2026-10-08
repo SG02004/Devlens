@@ -51,8 +51,10 @@ export const AuthPage = ({
           localStorage.setItem("devlens.auth_token", token);
         }
         onLoginSuccess({
+          ...data.user,
           name: data.user?.name || "Developer",
           email: data.user?.email || identifier,
+          role: data.user?.role || "user",
           selectedCategories: data.user?.selectedCategories || data.user?.selected_categories || [],
         });
       } else {
@@ -122,15 +124,15 @@ export const AuthPage = ({
   };
 
   return (
-    <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center py-10 px-4">
+    <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-center py-4 sm:py-10 px-1 sm:px-4">
       {/* Top Floating Controls: Dark / Light Mode Switch */}
       {onToggleTheme && (
-        <div className="absolute top-2 right-4 sm:right-6 z-20">
+        <div className="flex justify-end mb-4 sm:mb-0 sm:absolute sm:top-2 sm:right-6 z-20">
           <button
             id="btn-theme-toggle-auth"
             type="button"
             onClick={onToggleTheme}
-            className="border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-3.5 py-1.5 text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+            className="border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-3 sm:px-3.5 py-1.5 text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-sm"
             title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
           >
             {theme === "dark" ? (
@@ -148,20 +150,20 @@ export const AuthPage = ({
         </div>
       )}
 
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 lg:gap-16 items-center">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 sm:gap-12 lg:gap-16 items-center">
         {/* Left Section: Display typography */}
-        <section className="space-y-6 text-left">
+        <section className="space-y-4 sm:space-y-6 text-left">
           <div className="meta-tag">Daily Tech Reads & Guides</div>
 
-          <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl leading-[0.9] tracking-[-0.04em] text-[var(--ink)] m-0">
+          <h1 className="font-display text-3xl sm:text-6xl lg:text-8xl leading-[0.95] sm:leading-[0.9] tracking-[-0.04em] text-[var(--ink)] m-0">
             Daily technical stories curated.
           </h1>
 
-          <p className="font-mono text-sm sm:text-base text-[var(--ink-muted)] leading-relaxed max-w-xl">
+          <p className="font-mono text-xs sm:text-base text-[var(--ink-muted)] leading-relaxed max-w-xl">
             Curated articles, practical guides, topics tailored to your interests, and key takeaways to help you learn every day.
           </p>
 
-          <div className="flex flex-wrap gap-2 pt-4">
+          <div className="flex flex-wrap gap-2 pt-1 sm:pt-4">
             <span className="meta-tag-accent">Beginner Friendly</span>
             <span className="meta-tag">Choose Your Topics</span>
             <span className="meta-tag">Daily Updates</span>
@@ -169,7 +171,7 @@ export const AuthPage = ({
         </section>
 
         {/* Right Section: Minimalist Card */}
-        <section className="card p-8 sm:p-10 text-left relative shadow-xl">
+        <section className="card p-5 sm:p-10 text-left relative shadow-xl">
           {/* Header Switcher without 01 / 02 */}
           <div className="flex justify-between items-center mb-8 font-mono text-xs uppercase tracking-wider border-b border-[var(--border-dim)] pb-3">
             <button

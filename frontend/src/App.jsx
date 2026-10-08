@@ -350,15 +350,15 @@ export default function App() {
       {notification && (
         <div
           id="system-notification-toast"
-          className="fixed bottom-6 right-6 z-50 border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] shadow-2xl px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up font-mono"
+          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] shadow-2xl px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up font-mono"
         >
-          <span className="w-2.5 h-2.5 bg-[var(--accent)] animate-pulse" />
-          <span className="font-bold uppercase tracking-wider text-[11px] text-[var(--accent)]">[SYSTEM]:</span>
-          <span>{notification}</span>
+          <span className="w-2.5 h-2.5 bg-[var(--accent)] animate-pulse shrink-0" />
+          <span className="font-bold uppercase tracking-wider text-[11px] text-[var(--accent)] shrink-0">[SYSTEM]:</span>
+          <span className="flex-1 min-w-0 break-words">{notification}</span>
           <button
             type="button"
             onClick={() => setNotification(null)}
-            className="text-[var(--ink-muted)] hover:text-[var(--ink)] ml-2 cursor-pointer"
+            className="text-[var(--ink-muted)] hover:text-[var(--ink)] ml-2 cursor-pointer shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -379,7 +379,7 @@ export default function App() {
       )}
 
       {/* Main Content View */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         {!isAuthenticated ? (
           <AuthPage
             onLoginSuccess={handleLoginSuccess}

@@ -74,7 +74,7 @@ export const ArticleCard = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 sm:p-6 cursor-pointer" onClick={() => onOpenArticle(article)}>
+        <div className="p-4 sm:p-6 cursor-pointer" onClick={() => onOpenArticle(article)}>
           {/* Category & Status */}
           <div className="flex items-center justify-between gap-2 mb-2 font-mono">
             <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
@@ -98,7 +98,7 @@ export const ArticleCard = ({
           </p>
 
           {/* Metadata Row */}
-          <div className="mt-4 pt-3 border-t border-[var(--border-dim)] flex items-center justify-between font-mono text-[10px] text-[var(--ink-muted)] uppercase tracking-widest">
+          <div className="mt-4 pt-3 border-t border-[var(--border-dim)] flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] text-[var(--ink-muted)] uppercase tracking-widest">
             <span>{article.readTimeMinutes} MIN READ</span>
             <span>•</span>
             <span>{formattedDate}</span>
@@ -122,17 +122,17 @@ export const ArticleCard = ({
       </div>
 
       {/* Action Footer */}
-      <div className="px-5 sm:px-6 py-3.5 border-t-2 border-[var(--border-dim)] flex items-center justify-between font-mono text-xs bg-[var(--bg-surface)]">
+      <div className="px-4 sm:px-6 py-3 sm:py-3.5 border-t-2 border-[var(--border-dim)] flex flex-wrap items-center justify-between gap-2 font-mono text-xs bg-[var(--bg-surface)]">
         <button
           type="button"
           onClick={() => onOpenArticle(article)}
-          className="font-bold text-[var(--ink)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors uppercase tracking-wider cursor-pointer"
+          className="font-bold text-[var(--ink)] hover:text-[var(--accent)] flex items-center gap-1 transition-colors uppercase tracking-wider cursor-pointer text-[11px] sm:text-xs"
         >
           <span>READ SUMMARY</span>
           <ArrowUpRight className="w-3.5 h-3.5 text-[var(--accent)]" />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
           {/* Public Upvote Counter & Button */}
           {onUpvote && (
             <button
@@ -141,7 +141,7 @@ export const ArticleCard = ({
                 e.stopPropagation();
                 onUpvote(article.id);
               }}
-              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer bg-[var(--bg-surface)] text-[var(--ink)]"
+              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2 sm:px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 sm:gap-1.5 cursor-pointer bg-[var(--bg-surface)] text-[var(--ink)]"
               title="Upvote this article (visible to everyone)"
             >
               <ThumbsUp className="w-3 h-3 text-[var(--accent)]" />
@@ -153,7 +153,7 @@ export const ArticleCard = ({
             <button
               type="button"
               onClick={() => onTakeQuiz(article)}
-              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
+              className="border border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] px-2 sm:px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
             >
               <Award className="w-3 h-3 text-[var(--accent)]" />
               <span>QUIZ</span>

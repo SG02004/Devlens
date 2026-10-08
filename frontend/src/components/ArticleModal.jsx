@@ -90,21 +90,21 @@ export const ArticleModal = ({
       <div
         ref={cardRef}
         id={`article-detail-modal-${article.id}`}
-        className="modal-card p-6 sm:p-10 relative border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-left shadow-2xl"
+        className="modal-card p-4 sm:p-10 relative border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-left shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 z-10 w-9 h-9 border border-[var(--ink)] bg-[var(--bg-surface)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] text-[var(--ink)] flex items-center justify-center transition-colors cursor-pointer"
+          className="absolute top-3 right-3 sm:top-5 sm:right-5 z-10 w-8 h-8 sm:w-9 sm:h-9 border border-[var(--ink)] bg-[var(--bg-surface)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] text-[var(--ink)] flex items-center justify-center transition-colors cursor-pointer"
           aria-label="Close dialog"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
         {/* Cover Image */}
-        <div className="relative w-full h-56 sm:h-72 border-2 border-[var(--border-dim)] overflow-hidden mb-6 bg-[var(--bg)]">
+        <div className="relative w-full h-44 sm:h-72 border-2 border-[var(--border-dim)] overflow-hidden mb-5 sm:mb-6 bg-[var(--bg)]">
           <img
             src={coverImage}
             alt={article.title}
@@ -112,11 +112,11 @@ export const ArticleModal = ({
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)]/90 via-transparent to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between font-mono">
+          <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-wrap items-center justify-between gap-2 font-mono">
             <span className="meta-tag-accent bg-[var(--bg-surface)]">
               {article.categoryLabel}
             </span>
-            <span className="bg-[var(--bg-surface)] border border-[var(--ink)] text-[var(--ink)] text-[10px] uppercase font-bold px-3 py-1 shadow-sm">
+            <span className="bg-[var(--bg-surface)] border border-[var(--ink)] text-[var(--ink)] text-[10px] uppercase font-bold px-2.5 sm:px-3 py-1 shadow-sm">
               {article.source}
             </span>
           </div>
@@ -290,7 +290,7 @@ export const ArticleModal = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-8 pt-6 border-t-2 border-[var(--border-dim)] flex flex-wrap items-center justify-between gap-4 font-mono">
+        <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t-2 border-[var(--border-dim)] flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 font-mono">
           {onTakeQuiz && (
             <button
               type="button"
@@ -298,22 +298,22 @@ export const ArticleModal = ({
                 onClose();
                 onTakeQuiz(article);
               }}
-              className="border-2 border-[var(--accent)] bg-[var(--accent)] text-[#111113] hover:bg-transparent hover:text-[var(--accent)] px-5 py-2.5 text-xs font-bold font-display uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto justify-center border-2 border-[var(--accent)] bg-[var(--accent)] text-[#111113] hover:bg-transparent hover:text-[var(--accent)] px-4 sm:px-5 py-2.5 text-xs font-bold font-display uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
             >
-              <Award className="w-4 h-4" />
+              <Award className="w-4 h-4 shrink-0" />
               <span>TEST KNOWLEDGE (QUIZ)</span>
             </button>
           )}
 
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:ml-auto w-full sm:w-auto">
             {onUpvote && (
               <button
                 type="button"
                 onClick={() => onUpvote(article.id)}
-                className="border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-initial justify-center border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 sm:gap-2 cursor-pointer"
                 title="Upvote this article"
               >
-                <ThumbsUp className="w-3.5 h-3.5 text-[var(--accent)]" />
+                <ThumbsUp className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
                 <span>UPVOTE ({article.upvotes || 0})</span>
               </button>
             )}
@@ -322,16 +322,16 @@ export const ArticleModal = ({
               href={article.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-2"
+              className="flex-1 sm:flex-initial justify-center border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-3 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 sm:gap-2"
             >
-              <span>SOURCE ON {article.source}</span>
-              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="truncate">SOURCE ON {article.source}</span>
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
             </a>
 
             <button
               type="button"
               onClick={onClose}
-              className="border border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-5 py-2.5 text-xs font-bold font-display uppercase tracking-wider transition-colors cursor-pointer"
+              className="w-full sm:w-auto justify-center border border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-5 py-2.5 text-xs font-bold font-display uppercase tracking-wider transition-colors cursor-pointer"
             >
               CLOSE
             </button>

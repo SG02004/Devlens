@@ -12,8 +12,14 @@ function normalizeApiUrl(url) {
   return cleaned;
 }
 
-const isLocal = typeof window !== 'undefined' && 
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const isLocal =
+  import.meta.env.DEV ||
+  (typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.') ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(window.location.hostname)));
 
 const API_BASE = normalizeApiUrl(
   import.meta.env.VITE_API_URL || 

@@ -137,7 +137,7 @@ function CandidateCard({ candidate, onApprove, onDiscard, isApproving }) {
       </div>
 
       {/* Actions */}
-      <div className="px-4 py-3 border-t border-[var(--border-dim)] flex items-center justify-between gap-2">
+      <div className="px-4 py-3 border-t border-[var(--border-dim)] flex flex-wrap items-center justify-between gap-2">
         <a
           href={candidate.url}
           target="_blank"
@@ -147,7 +147,7 @@ function CandidateCard({ candidate, onApprove, onDiscard, isApproving }) {
           <ExternalLink className="w-3 h-3" />
           Open Article
         </a>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
             onClick={() => onDiscard(candidate._candidate_id)}
@@ -280,31 +280,31 @@ export function AdminPanel({ userProfile, onLogout }) {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] font-mono">
       {/* Notification */}
       {notification && (
-        <div className="fixed bottom-6 right-6 z-50 border-2 border-[var(--ink)] bg-[var(--bg-surface)] px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up">
-          <span className="w-2 h-2 bg-[var(--accent)] animate-pulse" />
-          <span className="font-bold uppercase tracking-wider text-[var(--accent)] text-[10px]">[ADMIN]:</span>
-          <span>{notification}</span>
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 border-2 border-[var(--ink)] bg-[var(--bg-surface)] px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up">
+          <span className="w-2 h-2 bg-[var(--accent)] animate-pulse shrink-0" />
+          <span className="font-bold uppercase tracking-wider text-[var(--accent)] text-[10px] shrink-0">[ADMIN]:</span>
+          <span className="truncate">{notification}</span>
         </div>
       )}
 
       {/* Admin Header */}
-      <div className="border-b-2 border-[var(--ink)] px-6 py-4 flex items-center justify-between bg-[var(--bg-surface)]">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 bg-[var(--accent)] animate-pulse" />
-          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)]">DevLens Admin</span>
+      <div className="border-2 border-[var(--ink)] px-4 sm:px-6 py-3.5 sm:py-4 flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)]">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          <span className="w-2 h-2 bg-[var(--accent)] animate-pulse shrink-0" />
+          <span className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--accent)] shrink-0">DevLens Admin</span>
           <span className="text-[var(--border-dim)] font-bold">|</span>
-          <span className="text-[10px] text-[var(--ink-muted)] uppercase tracking-widest">
+          <span className="text-[10px] text-[var(--ink-muted)] uppercase tracking-widest truncate">
             {userProfile?.name || userProfile?.username}
           </span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
           <button
             type="button"
             onClick={loadStats}
             className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-[var(--ink-muted)] hover:text-[var(--accent)] transition-colors cursor-pointer"
           >
             <RefreshCw className="w-3 h-3" />
-            Refresh Stats
+            <span>Refresh Stats</span>
           </button>
           <button
             type="button"
@@ -316,7 +316,7 @@ export function AdminPanel({ userProfile, onLogout }) {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-10">
+      <div className="max-w-6xl mx-auto px-0 sm:px-2 py-6 sm:py-8 space-y-8 sm:space-y-10">
 
         {/* ── Section 1: Category Stats Dashboard ── */}
         <section>
@@ -331,7 +331,7 @@ export function AdminPanel({ userProfile, onLogout }) {
               <Loader2 className="w-4 h-4 animate-spin" /> Loading stats…
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {stats.map((s) => <StatCard key={s.category} stat={s} />)}
             </div>
           )}
@@ -350,12 +350,12 @@ export function AdminPanel({ userProfile, onLogout }) {
           </p>
 
           {/* Controls */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3 mb-6">
+            <div className="relative w-full sm:w-auto">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="appearance-none border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] font-mono text-xs uppercase tracking-wider px-4 py-2.5 pr-8 focus:border-[var(--accent)] focus:outline-none cursor-pointer"
+                className="w-full sm:w-auto appearance-none border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] font-mono text-xs uppercase tracking-wider px-4 py-2.5 pr-8 focus:border-[var(--accent)] focus:outline-none cursor-pointer"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
@@ -368,7 +368,7 @@ export function AdminPanel({ userProfile, onLogout }) {
               type="button"
               onClick={handleFetchCandidates}
               disabled={fetchLoading}
-              className="flex items-center gap-2 border-2 border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] font-mono text-xs font-bold uppercase tracking-wider px-5 py-2.5 hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full sm:w-auto justify-center flex items-center gap-2 border-2 border-[var(--ink)] bg-[var(--ink)] text-[var(--bg)] font-mono text-xs font-bold uppercase tracking-wider px-5 py-2.5 hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] transition-colors cursor-pointer disabled:opacity-50"
             >
               {fetchLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -389,7 +389,7 @@ export function AdminPanel({ userProfile, onLogout }) {
 
           {/* Candidate Cards */}
           {candidates.length > 0 && (
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {candidates.map((c) => (
                 <CandidateCard
                   key={c._candidate_id}
