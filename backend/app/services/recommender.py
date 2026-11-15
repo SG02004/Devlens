@@ -33,8 +33,10 @@ def extract_top_keywords(
         tfidf_mat = vectorizer.fit_transform([doc_text])
         features = vectorizer.get_feature_names_out()
         scores = tfidf_mat.toarray()[0]
-        top_indices = scores.argsort()[::-1][:top_k]
-        return [features[i] for i in top_indices if scores[i] > 0]
+        top_indices = scores.argsort()[::-1]
+        raw_candidates = [features[i] for i in top_indices if scores[i] > 0]
+        from app.services.summariser import sanitize_skills
+        return sanitize_skills(raw_candidates)[:top_k]
     except Exception:
         return []
 

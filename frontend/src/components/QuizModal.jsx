@@ -132,6 +132,29 @@ export const QuizModal = ({
       setHasAnsweredCurrent(false);
     } else {
       setIsQuizComplete(true);
+      try {
+        const token = localStorage.getItem("devlens.auth_token");
+        const finalAnswers = [...userAnswers];
+        const finalScore = finalAnswers.reduce((acc, ans, idx) => {
+          return ans === questions[idx]?.correctIndex ? acc + 1 : acc;
+        }, 0);
+
+        fetch("/api/quiz/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            articleId: activeArticle.id,
+            score: finalScore,
+            totalQuestions: questions.length,
+            answers: finalAnswers,
+          }),
+        }).catch(() => {});
+      } catch {
+        // ignore error
+      }
     }
   };
 

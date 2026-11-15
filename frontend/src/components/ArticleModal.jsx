@@ -1,5 +1,21 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { X, ExternalLink, Clock, Calendar, CheckCircle2, Bookmark, Award, ThumbsUp, Sparkles } from "lucide-react";
+import {
+  X,
+  ExternalLink,
+  Clock,
+  Calendar,
+  CheckCircle2,
+  Bookmark,
+  Award,
+  ThumbsUp,
+  Sparkles,
+  BookOpen,
+  Cpu,
+  Code2,
+  Copy,
+  Check,
+  Layers,
+} from "lucide-react";
 import { getArticleCoverImage } from "../utils/imageUtils";
 
 export const ArticleModal = ({
@@ -12,8 +28,10 @@ export const ArticleModal = ({
   onSelectArticle,
 }) => {
   const cardRef = useRef(null);
+  const [viewMode, setViewMode] = useState("overview"); // "overview" | "deepdive" | "reader"
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   // Fetch local TF-IDF recommendations when article opens
   useEffect(() => {
@@ -103,8 +121,8 @@ export const ArticleModal = ({
           <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
-        {/* Cover Image */}
-        <div className="relative w-full h-44 sm:h-72 border-2 border-[var(--border-dim)] overflow-hidden mb-5 sm:mb-6 bg-[var(--bg)]">
+        {/* Cover Image - Compact Editorial Banner */}
+        <div className="relative w-full h-28 sm:h-32 border-2 border-[var(--border-dim)] overflow-hidden mb-4 bg-[var(--bg)]">
           <img
             src={coverImage}
             alt={article.title}
@@ -112,11 +130,11 @@ export const ArticleModal = ({
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)]/90 via-transparent to-transparent" />
-          <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-wrap items-center justify-between gap-2 font-mono">
+          <div className="absolute bottom-2.5 left-3 right-3 sm:bottom-3 sm:left-4 sm:right-4 flex flex-wrap items-center justify-between gap-2 font-mono">
             <span className="meta-tag-accent bg-[var(--bg-surface)]">
               {article.categoryLabel}
             </span>
-            <span className="bg-[var(--bg-surface)] border border-[var(--ink)] text-[var(--ink)] text-[10px] uppercase font-bold px-2.5 sm:px-3 py-1 shadow-sm">
+            <span className="bg-[var(--bg-surface)] border border-[var(--ink)] text-[var(--ink)] text-[10px] uppercase font-bold px-2 sm:px-2.5 py-0.5 shadow-sm">
               {article.source}
             </span>
           </div>
@@ -176,56 +194,247 @@ export const ArticleModal = ({
           BY <span className="text-[var(--ink)] font-bold">{article.author}</span>
         </p>
 
-        {/* Executive Summary */}
-        <div className="mt-5 font-mono text-sm sm:text-base leading-relaxed text-[var(--ink)]">
-          {article.summary}
+        {/* Content Mode Navigation Tabs */}
+        <div className="mt-6 flex items-center gap-1.5 sm:gap-2 border-b-2 border-[var(--border-dim)] pb-2 font-mono text-xs overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={() => setViewMode("overview")}
+            className={`px-3 py-1.5 font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewMode === "overview"
+                ? "bg-[var(--ink)] text-[var(--bg)] border border-[var(--ink)]"
+                : "text-[var(--ink-muted)] hover:text-[var(--ink)] border border-transparent"
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>OVERVIEW</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("deepdive")}
+            className={`px-3 py-1.5 font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewMode === "deepdive"
+                ? "bg-[var(--accent)] text-[#111113] border border-[var(--accent)]"
+                : "text-[var(--ink-muted)] hover:text-[var(--accent)] border border-transparent"
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>DEEP DIVE ANALYSIS</span>
+            <span className="text-[9px] bg-[var(--ink)]/10 px-1 py-0.5 rounded font-mono uppercase tracking-wider">
+              {article.deepDive ? "AI EXPANDED" : "SYNTHESIS"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("reader")}
+            className={`px-3 py-1.5 font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer ${
+              viewMode === "reader"
+                ? "bg-[var(--ink)] text-[var(--bg)] border border-[var(--ink)]"
+                : "text-[var(--ink-muted)] hover:text-[var(--ink)] border border-transparent"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>CLEAN READER</span>
+          </button>
         </div>
 
-        {/* Why It Matters Callout */}
-        {article.whyItMatters && (
-          <div className="mt-6 border-2 border-[var(--accent)] bg-[var(--accent-muted)] p-5 sm:p-6 text-left">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-              WHY IT MATTERS TO SYSTEM ARCHITECTS
-            </p>
-            <p className="mt-2 font-mono text-sm leading-relaxed text-[var(--ink)]">
-              {article.whyItMatters}
-            </p>
-          </div>
-        )}
-
-        {/* Key Takeaways */}
-        {article.keyTakeaways && article.keyTakeaways.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
-              KEY ENGINEERING TAKEAWAYS
-            </h3>
-            <ul className="mt-3 space-y-2.5 font-mono text-xs sm:text-sm text-[var(--ink)]">
-              {article.keyTakeaways.map((takeaway, idx) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <span className="w-1.5 h-1.5 bg-[var(--accent)] mt-2 shrink-0" />
-                  <span>{takeaway}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Skills Covered */}
-        {article.skillsExtracted && article.skillsExtracted.length > 0 && (
-          <div className="mt-6">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
-              DOMAIN CONCEPTS & SKILLS
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {article.skillsExtracted.map((skill) => (
-                <span
-                  key={skill}
-                  className="font-mono text-xs px-3 py-1 border border-[var(--border-dim)] text-[var(--ink)]"
-                >
-                  {skill}
-                </span>
-              ))}
+        {/* Tab 1: Executive Overview */}
+        {viewMode === "overview" && (
+          <div className="animate-fade-in space-y-6 mt-5">
+            {/* Executive Summary */}
+            <div className="font-sans text-sm sm:text-base leading-relaxed text-[var(--ink)]">
+              {article.summary}
             </div>
+
+            {/* Why It Matters Callout */}
+            {article.whyItMatters && (
+              <div className="border-2 border-[var(--accent)] bg-[var(--accent-muted)] p-4 sm:p-5 text-left">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                  WHY IT MATTERS TO SYSTEM ARCHITECTS
+                </p>
+                <p className="mt-2 font-sans text-sm leading-relaxed text-[var(--ink)]">
+                  {article.whyItMatters}
+                </p>
+              </div>
+            )}
+
+            {/* Key Takeaways */}
+            {article.keyTakeaways && article.keyTakeaways.length > 0 && (
+              <div>
+                <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+                  KEY ENGINEERING TAKEAWAYS
+                </h3>
+                <ul className="mt-3 space-y-2.5 font-sans text-xs sm:text-sm text-[var(--ink)]">
+                  {article.keyTakeaways.map((takeaway, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 bg-[var(--accent)] mt-2 shrink-0" />
+                      <span>{takeaway}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Skills Covered */}
+            {article.skillsExtracted && article.skillsExtracted.length > 0 && (
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--ink-muted)]">
+                  DOMAIN CONCEPTS & SKILLS
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {article.skillsExtracted.map((skill) => (
+                    <span
+                      key={skill}
+                      className="font-mono text-xs px-3 py-1 border border-[var(--border-dim)] text-[var(--ink)]"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 2: Architecture Deep-Dive */}
+        {viewMode === "deepdive" && (
+          <div className="animate-fade-in space-y-6 mt-5">
+            <div className="border-l-2 border-[var(--accent)] pl-4 py-1">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                PRINCIPAL ARCHITECTURAL BREAKDOWN
+              </span>
+              <p className="font-sans text-xs text-[var(--ink-muted)] mt-1">
+                Grounded analysis of underlying mechanisms, engineering trade-offs, and operational failure modes.
+              </p>
+            </div>
+
+            {/* Deep Dive Text */}
+            <div className="font-sans text-sm sm:text-base leading-relaxed text-[var(--ink)] space-y-4">
+              {article.deepDive ? (
+                article.deepDive.split("\n\n").map((para, i) => (
+                  <p key={i} className="leading-relaxed">
+                    {para}
+                  </p>
+                ))
+              ) : (
+                <>
+                  <p className="leading-relaxed">
+                    The core engineering paradigm described in <strong className="text-[var(--accent)]">{article.title}</strong> addresses critical operational and structural challenges in <span className="font-bold">{article.categoryLabel}</span>. Production distributed services adopting this pattern prioritize predictable tail latency, modular separation of concerns, and automated recovery boundaries.
+                  </p>
+                  <p className="leading-relaxed">
+                    {article.whyItMatters || article.summary}
+                  </p>
+                  <p className="leading-relaxed">
+                    When evaluating this approach against legacy patterns, architects must balance initial implementation complexity against long-term maintenance overhead. Key trade-offs include serialization costs, network partition tolerance, and strict schema validation boundaries across downstream consumers.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Code / Architecture Pattern Box */}
+            {article.codeSnippet && (
+              <div className="border border-[var(--border-dim)] bg-[var(--bg)] p-4 text-xs font-mono rounded-none">
+                <div className="flex items-center justify-between pb-2 mb-3 border-b border-[var(--border-dim)] text-[var(--ink-muted)]">
+                  <span className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-[var(--accent)]">
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>IMPLEMENTATION PATTERN / CONFIG</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(article.codeSnippet);
+                      setCopiedCode(true);
+                      setTimeout(() => setCopiedCode(false), 2000);
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-[var(--ink-muted)] hover:text-[var(--accent)] cursor-pointer"
+                  >
+                    {copiedCode ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedCode ? "COPIED" : "COPY"}</span>
+                  </button>
+                </div>
+                <pre className="overflow-x-auto text-[var(--ink)] leading-relaxed p-1">
+                  <code>{article.codeSnippet}</code>
+                </pre>
+              </div>
+            )}
+
+            {/* Trade-off Matrix Callout */}
+            <div className="border border-[var(--border-dim)] bg-[var(--bg)] p-4 space-y-2">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-[var(--accent)]">
+                PRODUCTION ARCHITECTURAL TRADE-OFFS
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                <div className="p-2.5 border border-[var(--border-dim)] bg-[var(--bg-surface)]">
+                  <span className="font-bold text-emerald-500 dark:text-emerald-400 block mb-1">PROS & ADVANTAGES</span>
+                  <p className="font-sans text-[var(--ink-muted)] text-xs leading-relaxed">
+                    Decoupled state mutation, horizontal throughput elasticity, and verified failure isolation.
+                  </p>
+                </div>
+                <div className="p-2.5 border border-[var(--border-dim)] bg-[var(--bg-surface)]">
+                  <span className="font-bold text-amber-600 dark:text-amber-400 block mb-1">CONS & OVERHEAD</span>
+                  <p className="font-sans text-[var(--ink-muted)] text-xs leading-relaxed">
+                    Higher operational monitoring requirements, eventual consistency trade-offs, and debugging complexity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Full Clean Reader */}
+        {viewMode === "reader" && (
+          <div className="animate-fade-in space-y-5 mt-5">
+            <div className="flex items-center justify-between border-b border-[var(--border-dim)] pb-3">
+              <div>
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
+                  DISTRACTION-FREE ARTICLE READER
+                </span>
+                <p className="font-mono text-xs text-[var(--ink-muted)] mt-0.5">
+                  Source: {article.source} • Author: {article.author}
+                </p>
+              </div>
+              <a
+                href={article.sourceUrl || article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[11px] font-bold text-[var(--accent)] hover:underline flex items-center gap-1"
+              >
+                <span>OPEN CANONICAL</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            {article.fullContent ? (
+              <div className="font-sans text-sm sm:text-base leading-relaxed text-[var(--ink)] space-y-4 max-h-[440px] overflow-y-auto pr-2 custom-scrollbar">
+                {article.fullContent.split("\n\n").map((chunk, i) => (
+                  <p key={i} className="leading-relaxed">
+                    {chunk}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 border border-[var(--border-dim)] bg-[var(--bg)] text-center space-y-3">
+                <BookOpen className="w-8 h-8 text-[var(--accent)] mx-auto opacity-80" />
+                <h4 className="font-display text-base font-bold text-[var(--ink)]">
+                  Full Article Hosted on {article.source}
+                </h4>
+                <p className="text-xs text-[var(--ink-muted)] max-w-md mx-auto leading-relaxed">
+                  This publication is optimized for reading on the canonical source domain. Read our AI Executive Overview & Deep Dive, or jump directly to the original publisher.
+                </p>
+                <div className="pt-2">
+                  <a
+                    href={article.sourceUrl || article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 border-2 border-[var(--accent)] bg-[var(--accent)] text-[#111113] px-5 py-2 text-xs font-bold font-display uppercase tracking-wider hover:bg-transparent hover:text-[var(--accent)] transition-colors"
+                  >
+                    <span>READ FULL ARTICLE ON {article.source.toUpperCase()}</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -291,20 +500,6 @@ export const ArticleModal = ({
 
         {/* Footer Actions */}
         <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t-2 border-[var(--border-dim)] flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 font-mono">
-          {onTakeQuiz && (
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onTakeQuiz(article);
-              }}
-              className="w-full sm:w-auto justify-center border-2 border-[var(--accent)] bg-[var(--accent)] text-[#111113] hover:bg-transparent hover:text-[var(--accent)] px-4 sm:px-5 py-2.5 text-xs font-bold font-display uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <Award className="w-4 h-4 shrink-0" />
-              <span>TEST KNOWLEDGE (QUIZ)</span>
-            </button>
-          )}
-
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:ml-auto w-full sm:w-auto">
             {onUpvote && (
               <button

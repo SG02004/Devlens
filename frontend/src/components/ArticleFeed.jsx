@@ -514,11 +514,7 @@ export const ArticleFeed = ({
             {/* Image Column */}
             <div className="relative h-64 sm:h-80 lg:h-full min-h-[280px] bg-[var(--bg)] border-b-2 lg:border-b-0 lg:border-r-2 border-[var(--border-dim)] overflow-hidden">
               <img
-                src={getArticleCoverImage(
-                  featuredArticle.id,
-                  featuredArticle.category,
-                  featuredArticle.imageUrl
-                )}
+                src={getArticleCoverImage(featuredArticle.id, featuredArticle.category, featuredArticle.imageUrl)}
                 alt={featuredArticle.title}
                 className="w-full h-full object-cover grayscale contrast-125"
                 loading="lazy"
@@ -572,7 +568,7 @@ export const ArticleFeed = ({
               Recommended Articles
             </h3>
             <p className="text-xs text-[var(--ink-muted)] mt-1">
-              Select any article to view executive summaries, architecture impacts, and quiz assessments.
+              Select any article to view executive summaries, architecture deep dives, and distraction-free text.
             </p>
           </div>
 

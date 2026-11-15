@@ -3,6 +3,8 @@ from app.models.user import User
 from app.models.category import Category
 from app.models.article import Article
 from app.models.read_event import ReadEvent
+from app.models.sync_run import SyncRun
+from app.models.repo import Repo, RepoSnapshot
 
 __all__ = [
     "Base",
@@ -14,4 +16,7 @@ __all__ = [
     "Category",
     "Article",
     "ReadEvent",
+    "SyncRun",
+    "Repo",
+    "RepoSnapshot",
 ]

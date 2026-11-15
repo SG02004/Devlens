@@ -1,3 +1,5 @@
+import re
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,24 +32,51 @@ async def register_user(
 ):
     """Registers a new user, hashes their password, and returns a JWT token."""
     email_clean = payload.email.strip().lower()
-    username_clean = (payload.username or email_clean.split("@")[0]).strip().lower()
 
     try:
-        # Check for existing email or username
-        query = select(User).where(or_(User.email == email_clean, User.username == username_clean))
-        result = await db.execute(query)
-        existing_user = result.scalar_one_or_none()
-
-        if existing_user:
-            if existing_user.email == email_clean:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="An account with this email address already exists. Please sign in instead.",
-                )
+        # Check for existing email address
+        email_query = select(User).where(User.email == email_clean)
+        existing_email_user = (await db.execute(email_query)).scalar_one_or_none()
+        if existing_email_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This username is already taken. Please choose another.",
+                detail="An account with this email address already exists. Please sign in instead.",
             )
+
+        # Determine username: if client explicitly supplied one, validate it
+        raw_username = (payload.username or "").strip().lower()
+        if raw_username:
+            user_query = select(User).where(User.username == raw_username)
+            existing_user = (await db.execute(user_query)).scalar_one_or_none()
+            if existing_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="This username is already taken. Please choose another.",
+                )
+            username_clean = raw_username
+        else:
+            # Auto-generate a collision-free username from the email prefix
+            base_prefix = re.sub(r"[^a-z0-9_]", "", email_clean.split("@")[0]) or "user"
+            candidate_username = base_prefix
+
+            # Check if base prefix is available
+            user_query = select(User).where(User.username == candidate_username)
+            if not (await db.execute(user_query)).scalar_one_or_none():
+                username_clean = candidate_username
+            else:
+                # Base is already taken (e.g. 'saurabh'): generate unique candidate with counter/suffix
+                counter = 1
+                while True:
+                    candidate_username = f"{base_prefix}{counter}"
+                    user_query = select(User).where(User.username == candidate_username)
+                    if not (await db.execute(user_query)).scalar_one_or_none():
+                        username_clean = candidate_username
+                        break
+                    counter += 1
+                    if counter > 50:
+                        candidate_username = f"{base_prefix}_{uuid.uuid4().hex[:4]}"
+                        username_clean = candidate_username
+                        break
 
         # Hash password and create User record
         new_user = User(

@@ -9,6 +9,6 @@ export { DailyGoalWidget } from '../components/DailyGoalWidget';
 export { Header } from '../components/Header';
 export { ProfileSection } from '../components/ProfileSection';
 export { QuizModal } from '../components/QuizModal';
-export { AgentPipelineView } from '../components/AgentPipelineView';
 export { AnalyticsBoard } from '../components/AnalyticsBoard';
-export { ArchitectureVivaView } from '../components/ArchitectureVivaView';
+export { RepoCard } from '../components/RepoCard';
+export { TrendingReposView } from './TrendingReposView';

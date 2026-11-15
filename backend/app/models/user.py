@@ -34,10 +34,10 @@ class User(Base):
         JSON, default=DEFAULT_CATEGORIES, nullable=False
     )
     institution: Mapped[str] = mapped_column(
-        String(150), default="Full-Stack & Systems Engineering", nullable=True
+        String(150), default="", nullable=True
     )
-    program: Mapped[str] = mapped_column(String(100), default="Senior Developer", nullable=True)
-    batch: Mapped[str] = mapped_column(String(100), default="Active Member", nullable=True)
+    program: Mapped[str] = mapped_column(String(100), default="", nullable=True)
+    batch: Mapped[str] = mapped_column(String(100), default="", nullable=True)
     supervisor: Mapped[str] = mapped_column(String(100), default="", nullable=True)
 
     # Reading & Engagement Analytics

@@ -15,12 +15,10 @@ export const ProfileSection = ({
   onLogout,
 }) => {
   const [isEditingInfo, setIsEditingInfo] = useState(false);
-  const [editName, setEditName] = useState(userProfile.name);
-  const [editEmail, setEditEmail] = useState(userProfile.email);
-  const [editProgram, setEditProgram] = useState(userProfile.program || "Systems Engineering");
-  const [editInstitution, setEditInstitution] = useState(
-    userProfile.institution || "DevLens Architecture Labs"
-  );
+  const [editName, setEditName] = useState(userProfile.name || "");
+  const [editEmail, setEditEmail] = useState(userProfile.email || "");
+  const [editProgram, setEditProgram] = useState(userProfile.program || "");
+  const [editInstitution, setEditInstitution] = useState(userProfile.institution || "");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccessMsg, setProfileSuccessMsg] = useState(null);
 
@@ -77,11 +75,38 @@ export const ProfileSection = ({
               <h1 className="font-display text-xl sm:text-4xl font-extrabold text-[var(--ink)] tracking-tight m-0 break-words">
                 {userProfile.name}
               </h1>
-              <p className="font-mono text-xs sm:text-sm text-[var(--ink-muted)] mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 break-all sm:break-normal">
+              <div className="font-mono text-xs sm:text-sm text-[var(--ink-muted)] mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 break-all sm:break-normal">
                 <span>{userProfile.email}</span>
-                <span className="hidden sm:inline">•</span>
-                <span className="text-[var(--accent)] font-bold">{userProfile.program || "Systems Engineering"}</span>
-              </p>
+                {userProfile.program?.trim() ? (
+                  <>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="text-[var(--accent)] font-bold">{userProfile.program}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">•</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditName(userProfile.name || "");
+                        setEditEmail(userProfile.email || "");
+                        setEditProgram(userProfile.program || "");
+                        setEditInstitution(userProfile.institution || "");
+                        setIsEditingInfo(true);
+                      }}
+                      className="text-[var(--accent)] hover:underline font-bold text-xs inline-flex items-center gap-1 cursor-pointer bg-[var(--accent)]/10 px-2 py-0.5 border border-[var(--accent)]/30"
+                    >
+                      <span>+ Add role / specialization</span>
+                    </button>
+                  </>
+                )}
+                {userProfile.institution?.trim() && (
+                  <>
+                    <span className="hidden sm:inline">•</span>
+                    <span>{userProfile.institution}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -89,16 +114,19 @@ export const ProfileSection = ({
             <button
               type="button"
               onClick={() => {
+                if (!isEditingInfo) {
+                  setEditName(userProfile.name || "");
+                  setEditEmail(userProfile.email || "");
+                  setEditProgram(userProfile.program || "");
+                  setEditInstitution(userProfile.institution || "");
+                }
                 setIsEditingInfo(!isEditingInfo);
-                setEditName(userProfile.name);
-                setEditEmail(userProfile.email);
               }}
               className="flex-1 sm:flex-initial justify-center border border-[var(--ink)] hover:border-[var(--accent)] hover:text-[var(--accent)] text-[var(--ink)] px-3.5 sm:px-4 py-2 font-bold uppercase tracking-wider transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
             >
               <Edit2 className="w-3.5 h-3.5" />
               <span>{isEditingInfo ? "CANCEL" : "EDIT PROFILE"}</span>
             </button>
-
             <button
               type="button"
               onClick={onLogout}
@@ -109,6 +137,31 @@ export const ProfileSection = ({
             </button>
           </div>
         </div>
+
+        {/* Role / Specialization prompt card if not set yet */}
+        {!userProfile.program?.trim() && !isEditingInfo && (
+          <div className="p-4 border-2 border-dashed border-[var(--border)] bg-[var(--bg)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-mono text-xs">
+            <div>
+              <p className="font-bold text-[var(--ink)]">What is your role or engineering specialization?</p>
+              <p className="text-[11px] text-[var(--ink-muted)] mt-0.5">
+                Keep it blank or set your title (e.g. Frontend Developer, Cloud Architect, CS Student) anytime.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEditName(userProfile.name || "");
+                setEditEmail(userProfile.email || "");
+                setEditProgram(userProfile.program || "");
+                setEditInstitution(userProfile.institution || "");
+                setIsEditingInfo(true);
+              }}
+              className="border border-[var(--accent)] bg-[var(--bg-surface)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#111113] px-3.5 py-1.5 font-bold uppercase tracking-wider text-[11px] transition-colors cursor-pointer shrink-0"
+            >
+              Add Role / Specialization
+            </button>
+          </div>
+        )}
 
         {profileSuccessMsg && (
           <div className="p-3 border border-emerald-500 bg-emerald-500/10 text-emerald-500 font-mono text-xs">
@@ -153,26 +206,26 @@ export const ProfileSection = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1">
-                  SPECIALIZATION / ROLE
+                  ROLE / SPECIALIZATION <span className="opacity-60 lowercase font-normal">(optional — edit anytime)</span>
                 </label>
                 <input
                   type="text"
                   value={editProgram}
                   onChange={(e) => setEditProgram(e.target.value)}
-                  placeholder="e.g. Distributed Systems Engineer"
+                  placeholder="e.g. Frontend Developer, DevOps Engineer, Student"
                   className="w-full bg-[var(--bg)] border border-[var(--ink)] px-3 py-2 text-xs text-[var(--ink)] focus:border-[var(--accent)] outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-[var(--ink-muted)] mb-1">
-                  LAB / ORGANIZATION
+                  ORGANIZATION / SCHOOL <span className="opacity-60 lowercase font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
                   value={editInstitution}
                   onChange={(e) => setEditInstitution(e.target.value)}
-                  placeholder="e.g. Cloud Architecture Group"
+                  placeholder="e.g. Company, University, or independent"
                   className="w-full bg-[var(--bg)] border border-[var(--ink)] px-3 py-2 text-xs text-[var(--ink)] focus:border-[var(--accent)] outline-none"
                 />
               </div>

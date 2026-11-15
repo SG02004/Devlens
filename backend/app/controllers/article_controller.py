@@ -9,8 +9,9 @@ from app.models.database import get_db
 from app.models.article import Article
 from app.models.user import User
 from app.models.read_event import ReadEvent
-from app.utils.security import get_optional_user, get_current_user
-from app.views.article_views import ArticleResponse, FeedResponse, SyncResponse
+from app.models.sync_run import SyncRun
+from app.utils.security import get_optional_user, get_current_user, require_admin
+from app.views.article_views import ArticleResponse, FeedResponse, SyncResponse, SyncRunsListResponse
 from app.services.fetcher import (
     fetch_articles_for_category,
     extract_full_text,
@@ -122,6 +123,32 @@ async def get_articles_feed(
         total=total_count,
         categories=list(CATEGORY_FEEDS.keys()),
         filter=category,
+    )
+
+
+@router.get("/sync-runs", response_model=SyncRunsListResponse)
+async def get_sync_runs(
+    limit: int = Query(20, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    """
+    Returns historical sync runs for observability (admin only).
+    Logs started_at, finished_at, articles fetched, articles added, and error diagnostics.
+    """
+    count_q = select(func.count()).select_from(SyncRun)
+    total = (await db.execute(count_q)).scalar_one() or 0
+
+    query = select(SyncRun).order_by(desc(SyncRun.started_at)).offset(skip).limit(limit)
+    result = await db.execute(query)
+    runs = list(result.scalars().all())
+
+    return SyncRunsListResponse(
+        runs=runs,
+        total=total,
+        limit=limit,
+        skip=skip,
     )
 
 
@@ -413,18 +440,24 @@ async def execute_article_sync(
     db: AsyncSession,
     category: Optional[str] = None,
     limit_per_source: int = 4,
+    lookback_hours: Optional[int] = None,
+    max_quota: Optional[int] = None,
 ) -> SyncResponse:
     """
     Executes the article sync pipeline:
-    Fetches candidates, scores quality, enforces 15/day quota, deduplicates, and saves.
+    Fetches candidates, scores quality, enforces quota, deduplicates, and saves.
+    Supports lookback_hours (e.g. 36h for daily 6:00 AM runs) and max_quota overrides.
     Callable both from API endpoints and background schedulers.
     """
+    started_at = datetime.now(timezone.utc)
     categories_to_sync = [category] if category else list(CATEGORY_FEEDS.keys())
     total_fetched = 0
     total_added = 0
     errors = []
 
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = started_at.replace(hour=0, minute=0, second=0, microsecond=0)
+    effective_max_per_day = max_quota or MAX_ARTICLES_PER_DAY
+    min_pub = (started_at - timedelta(hours=lookback_hours)) if lookback_hours else None
 
     for cat in categories_to_sync:
         try:
@@ -434,13 +467,18 @@ async def execute_article_sync(
                 Article.created_at >= today_start,
             )
             today_count = (await db.execute(count_q)).scalar_one() or 0
-            quota_left = max(0, MAX_ARTICLES_PER_DAY - today_count)
+            quota_left = max(0, effective_max_per_day - today_count)
 
             if quota_left <= 0:
                 continue
 
             # Fetches candidates, scores quality, applies quality threshold, and ranks
-            fetched_items = await fetch_articles_for_category(cat, limit_per_source=limit_per_source)
+            fetched_items = await fetch_articles_for_category(
+                cat,
+                limit_per_source=limit_per_source,
+                min_published_at=min_pub,
+                max_count=effective_max_per_day,
+            )
             total_fetched += len(fetched_items)
 
             cat_added = 0
@@ -477,11 +515,15 @@ async def execute_article_sync(
                         category=item["category"],
                         article_text=text_for_processing,
                     )
+                    deep_dive_text = None
+                    code_snippet_text = None
                     if ai_summary:
                         summary_text = ai_summary.get("summary") or summary_text
                         why_it_matters = ai_summary.get("why_it_matters") or why_it_matters
                         key_takeaways = ai_summary.get("key_takeaways") or key_takeaways
                         skills_extracted = ai_summary.get("skills_extracted") or skills_extracted
+                        deep_dive_text = ai_summary.get("deep_dive")
+                        code_snippet_text = ai_summary.get("code_or_pattern")
                         if readability_score <= 0 and ai_summary.get("difficulty"):
                             difficulty = ai_summary.get("difficulty")
                     else:
@@ -489,6 +531,9 @@ async def execute_article_sync(
                         from app.services.fetcher import format_summary_excerpt
                         if full_text and len(full_text) > len(summary_text):
                             summary_text = format_summary_excerpt(full_text, max_chars=420)
+                            paragraphs = [p.strip() for p in full_text.split("\n\n") if len(p.strip()) > 80]
+                            if len(paragraphs) >= 2:
+                                deep_dive_text = "\n\n".join(paragraphs[:3])
                         kw = extract_top_keywords(f"{item['title']} {text_for_processing}", top_k=5)
                         if kw:
                             skills_extracted = [k.title() for k in kw]
@@ -515,6 +560,9 @@ async def execute_article_sync(
                         readability_score=readability_score,
                         summary=summary_text,
                         why_it_matters=why_it_matters,
+                        deep_dive=deep_dive_text,
+                        code_snippet=code_snippet_text,
+                        full_content=full_text,
                         key_takeaways=key_takeaways,
                         skills_extracted=skills_extracted,
                         upvotes=item.get("upvotes", 0),
@@ -529,6 +577,30 @@ async def execute_article_sync(
         except Exception as e:
             errors.append(f"Error syncing {cat}: {str(e)}")
 
+    finished_at = datetime.now(timezone.utc)
+    if not errors:
+        status_val = "success"
+    elif total_added > 0:
+        status_val = "partial"
+    else:
+        status_val = "failed"
+
+    try:
+        sync_run = SyncRun(
+            started_at=started_at,
+            finished_at=finished_at,
+            category=category,
+            articles_fetched=total_fetched,
+            articles_added=total_added,
+            errors=errors,
+            status=status_val,
+        )
+        db.add(sync_run)
+        await db.commit()
+    except Exception as e:
+        # Prevent telemetry persistence failure from crashing the return payload
+        errors.append(f"Error recording sync run telemetry: {str(e)}")
+
     return SyncResponse(
         message=f"Sync completed successfully. Evaluated quality candidates, saved {total_added} new articles (daily cap: {MAX_ARTICLES_PER_DAY}/category).",
         articles_fetched=total_fetched,
@@ -542,10 +614,11 @@ async def sync_articles(
     category: Optional[str] = Query(None, description="Sync specific category or all"),
     limit_per_source: int = Query(4, ge=1, le=10),
     db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
 ):
     """
-    Triggers on-demand article collection from Dev.to and high-signal RSS feeds.
-    Enforces quality filtering and caps ingestion at MAX_ARTICLES_PER_DAY (15)
+    Triggers on-demand article collection from high-signal RSS feeds.
+    Enforces quality filtering and caps ingestion at MAX_ARTICLES_PER_DAY (7)
     per category per day (or fewer if fewer qualify). Deduplicates via SHA-256 url_hash.
     """
     return await execute_article_sync(db=db, category=category, limit_per_source=limit_per_source)

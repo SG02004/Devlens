@@ -12,34 +12,56 @@ CATEGORY_FEEDS = {
         {"name": "MDN Blog", "url": "https://developer.mozilla.org/en-US/blog/rss.xml", "type": "rss"},
         {"name": "Go Blog", "url": "https://go.dev/blog/feed.atom", "type": "rss"},
         {"name": "Node.js Blog", "url": "https://nodejs.org/en/feed/blog.xml", "type": "rss"},
+        {"name": "Vercel Blog", "url": "https://vercel.com/atom", "type": "atom"},
+        {"name": "web.dev", "url": "https://web.dev/feed.xml", "type": "rss"},
+        {"name": "CSS-Tricks", "url": "https://css-tricks.com/feed/", "type": "rss"},
+        {"name": "Frontend Focus", "url": "https://cprss.s3.amazonaws.com/frontendfoc.us.xml", "type": "rss"},
     ],
     "artificial-intelligence": [
         {"name": "Google Research Blog", "url": "https://research.google/blog/rss/", "type": "rss"},
         {"name": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml", "type": "rss"},
         {"name": "Meta Engineering", "url": "https://engineering.fb.com/feed/", "type": "rss"},
         {"name": "Apple ML Research", "url": "https://machinelearning.apple.com/rss.xml", "type": "rss"},
+        {"name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml", "type": "rss"},
+        {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml", "type": "rss"},
+        {"name": "MIT AI News", "url": "https://news.mit.edu/rss/topic/artificial-intelligence2", "type": "rss"},
+        {"name": "BAIR Blog (Berkeley AI)", "url": "https://bair.berkeley.edu/blog/feed.xml", "type": "rss"},
     ],
     "data-science": [
         {"name": "Towards Data Science", "url": "https://towardsdatascience.com/feed", "type": "rss"},
         {"name": "Import AI", "url": "https://importai.substack.com/feed", "type": "rss"},
         {"name": "AWS Big Data Blog", "url": "https://aws.amazon.com/blogs/big-data/feed/", "type": "rss"},
+        {"name": "Databricks Blog", "url": "https://www.databricks.com/feed", "type": "rss"},
+        {"name": "Weights & Biases", "url": "https://wandb.ai/fully-connected/rss.xml", "type": "rss"},
+        {"name": "Machine Learning Mastery", "url": "https://machinelearningmastery.com/feed/", "type": "rss"},
+        {"name": "O'Reilly Radar", "url": "https://www.oreilly.com/radar/feed/index.xml", "type": "rss"},
     ],
     "cyber-security": [
         {"name": "SANS ISC", "url": "https://isc.sans.edu/rssfeed.xml", "type": "rss"},
         {"name": "CSO Online", "url": "https://www.csoonline.com/feed/", "type": "rss"},
         {"name": "Unit 42", "url": "https://unit42.paloaltonetworks.com/feed/", "type": "rss"},
         {"name": "Wired Security", "url": "https://www.wired.com/feed/category/security/latest/rss", "type": "rss"},
+        {"name": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews", "type": "rss"},
+        {"name": "Dark Reading", "url": "https://www.darkreading.com/rss.xml", "type": "rss"},
+        {"name": "SecurityWeek", "url": "https://www.securityweek.com/feed/", "type": "rss"},
+        {"name": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/", "type": "rss"},
     ],
     "cloud-computing": [
         {"name": "Cloudflare Blog", "url": "https://blog.cloudflare.com/rss/", "type": "rss"},
         {"name": "InfoQ Cloud", "url": "https://feed.infoq.com/Cloud/news", "type": "rss"},
         {"name": "Netflix Tech Blog", "url": "https://netflixtechblog.com/feed", "type": "rss"},
+        {"name": "AWS News Blog", "url": "https://aws.amazon.com/blogs/aws/feed/", "type": "rss"},
+        {"name": "Google Cloud Blog", "url": "https://cloudblog.withgoogle.com/rss/", "type": "rss"},
+        {"name": "Martin Fowler", "url": "https://martinfowler.com/feed.atom", "type": "atom"},
     ],
     "devops": [
         {"name": "GitHub Blog", "url": "https://github.blog/feed/", "type": "rss"},
         {"name": "HashiCorp Blog", "url": "https://www.hashicorp.com/blog/feed.xml", "type": "rss"},
-        {"name": "DevOps.com", "url": "https://devops.com/feed/", "type": "rss"},
         {"name": "Spotify Engineering", "url": "https://engineering.atspotify.com/feed/", "type": "rss"},
+        {"name": "CNCF Blog", "url": "https://www.cncf.io/blog/feed/", "type": "rss"},
+        {"name": "Kubernetes Blog", "url": "https://kubernetes.io/feed.xml", "type": "rss"},
+        {"name": "GitLab Blog", "url": "https://about.gitlab.com/atom.xml", "type": "atom"},
+        {"name": "Grafana Labs", "url": "https://grafana.com/blog/news.xml", "type": "rss"},
     ],
 }
 
@@ -49,6 +71,8 @@ SOURCE_WEIGHTS = {
     "Google Research Blog": 0.92,
     "Google DeepMind": 0.92,
     "Apple ML Research": 0.90,
+    "Hugging Face Blog": 0.90,
+    "OpenAI News": 0.90,
     # Core infrastructure & platform engineering (0.86 - 0.89)
     "Meta Engineering": 0.88,
     "Unit 42": 0.88,
@@ -56,21 +80,41 @@ SOURCE_WEIGHTS = {
     "Cloudflare Blog": 0.86,
     "Netflix Tech Blog": 0.86,
     "GitHub Blog": 0.86,
+    "Vercel Blog": 0.88,
+    "MIT AI News": 0.88,
+    "BAIR Blog (Berkeley AI)": 0.88,
+    "Databricks Blog": 0.88,
+    "CNCF Blog": 0.88,
+    "Kubernetes Blog": 0.88,
+    "AWS News Blog": 0.88,
+    "Google Cloud Blog": 0.88,
+    "Martin Fowler": 0.86,
+    "Krebs on Security": 0.86,
     # Leading vendor & runtime authority (0.80 - 0.85)
     "HashiCorp Blog": 0.85,
     "AWS Big Data Blog": 0.85,
     "Node.js Blog": 0.84,
     "Go Blog": 0.84,
+    "GitLab Blog": 0.84,
+    "Grafana Labs": 0.84,
+    "Weights & Biases": 0.84,
+    "web.dev": 0.86,
     "MDN Blog": 0.82,
     "Spotify Engineering": 0.82,
+    "The Hacker News": 0.82,
+    "Dark Reading": 0.82,
+    "O'Reilly Radar": 0.82,
     "InfoQ Cloud": 0.80,
+    "CSS-Tricks": 0.80,
+    "SecurityWeek": 0.80,
+    "Machine Learning Mastery": 0.80,
     # Industry & practitioner publications (0.74 - 0.79)
     "Towards Data Science": 0.78,
     "Smashing Magazine": 0.78,
     "CSO Online": 0.78,
+    "Frontend Focus": 0.78,
     "Wired Security": 0.76,
     "Import AI": 0.76,
-    "DevOps.com": 0.74,
 }
 
 # Minimum quality threshold to accept an article (discard junk/stale items)
@@ -168,7 +212,7 @@ def select_quality_articles(
     Quality gate:
     1. Filters out articles scoring below min_score (drops junk/stale items).
     2. Sorts descending by quality score.
-    3. Caps at max_count (15 articles per category per day).
+    3. Caps at max_count (7 articles per category per day, or custom max_count).
     If fewer articles meet the quality threshold, returns only those that qualify.
     """
     quality_articles = [a for a in articles if a.get("relevance_score", 0) >= min_score]
@@ -176,69 +220,13 @@ def select_quality_articles(
     return quality_articles[:max_count]
 
 
-async def fetch_devto_articles(category: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Fetches articles from Dev.to public REST API."""
-    tag = DEVTO_TAG_MAP.get(category, "programming")
-    api_url = f"https://dev.to/api/articles?tag={tag}&per_page={limit}"
-    articles = []
-
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            res = await client.get(api_url, headers={"User-Agent": "DevLens/1.0"})
-            if res.status_code == 200:
-                data = res.json()
-                for item in data:
-                    url = item.get("url")
-                    if not url:
-                        continue
-                    # Parse published_at
-                    pub_date = None
-                    raw_pub = item.get("published_at")
-                    if raw_pub:
-                        try:
-                            pub_date = datetime.fromisoformat(raw_pub.replace("Z", "+00:00"))
-                        except Exception:
-                            pub_date = datetime.now(timezone.utc)
-
-                    title = item.get("title", "").strip()
-                    summary = format_summary_excerpt(item.get("description") or item.get("body_markdown", ""))
-                    upvotes = item.get("positive_reactions_count", 0)
-
-                    rel_score = calculate_quality_score(
-                        source="Dev.to",
-                        published_at=pub_date,
-                        title=title,
-                        summary=summary,
-                        upvotes=upvotes,
-                    )
-
-                    articles.append({
-                        "title": title,
-                        "url": url,
-                        "url_hash": hash_url(url),
-                        "source": "Dev.to",
-                        "source_url": url,
-                        "author": item.get("user", {}).get("name", "Dev.to Author"),
-                        "published_at": pub_date,
-                        "category": category,
-                        "read_time_minutes": item.get("reading_time_minutes", 5),
-                        "difficulty": "Intermediate",
-                        "summary": summary or f"Latest update on {title}.",
-                        "why_it_matters": f"Trending community post in {category.replace('-', ' ').title()} with active developer engagement.",
-                        "key_takeaways": [tag.strip() for tag in item.get("tag_list", []) if tag][:4],
-                        "skills_extracted": item.get("tag_list", [])[:5],
-                        "upvotes": 0,
-                        "comments_count": item.get("comments_count", 0),
-                        "relevance_score": rel_score,
-                    })
-    except Exception as e:
-        print(f"[Fetcher] Error fetching Dev.to for {category}: {e}")
-
-    return articles
-
-
-async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Fetches and parses an RSS feed using feedparser."""
+async def fetch_rss_feed(
+    feed_info: Dict[str, str],
+    category: str,
+    limit: int = 5,
+    min_published_at: Optional[datetime] = None,
+) -> List[Dict[str, Any]]:
+    """Fetches and parses an RSS feed using feedparser, optionally filtering by min_published_at."""
     url = feed_info["url"]
     source_name = feed_info["name"]
     articles = []
@@ -256,16 +244,20 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
             if not link:
                 continue
 
-            title = clean_html(entry.get("title", ""))
-            raw_summary = entry.get("summary", entry.get("description", ""))
-            summary = format_summary_excerpt(raw_summary)
-            author = entry.get("author", f"{source_name} Editorial")
-
             # Parse published date (supports both RSS published_parsed and Atom updated_parsed)
             published_at = None
             parsed_time = getattr(entry, "published_parsed", None) or getattr(entry, "updated_parsed", None)
             if parsed_time:
                 published_at = datetime(*parsed_time[:6], tzinfo=timezone.utc)
+
+            # Date filter if specified (e.g. for rolling previous day window or backfill)
+            if min_published_at and published_at and published_at < min_published_at:
+                continue
+
+            title = clean_html(entry.get("title", ""))
+            raw_summary = entry.get("summary", entry.get("description", ""))
+            summary = format_summary_excerpt(raw_summary)
+            author = entry.get("author", f"{source_name} Editorial")
 
             rel_score = calculate_quality_score(
                 source=source_name,
@@ -303,21 +295,28 @@ async def fetch_rss_feed(feed_info: Dict[str, str], category: str, limit: int = 
     return articles
 
 
-async def fetch_articles_for_category(category: str, limit_per_source: int = 4) -> List[Dict[str, Any]]:
+async def fetch_articles_for_category(
+    category: str,
+    limit_per_source: int = 4,
+    min_published_at: Optional[datetime] = None,
+    max_count: int = MAX_ARTICLES_PER_DAY,
+) -> List[Dict[str, Any]]:
     """
     Fetches raw candidates from the category RSS feeds in CATEGORY_FEEDS,
-    applies quality scoring, enforces the quality threshold, and returns
-    at most MAX_ARTICLES_PER_DAY (7) articles (or fewer if fewer qualify).
+    applies optional min_published_at filtering, scores quality,
+    enforces the quality threshold, and returns at most max_count articles.
     """
     candidates = []
 
     feeds = CATEGORY_FEEDS.get(category, [])
     for f in feeds:
-        rss_items = await fetch_rss_feed(f, category, limit=limit_per_source)
+        rss_items = await fetch_rss_feed(
+            f, category, limit=limit_per_source, min_published_at=min_published_at
+        )
         candidates.extend(rss_items)
 
     # Quality Gate & Daily Cap: Keep top-scoring articles passing threshold
-    return select_quality_articles(candidates, max_count=MAX_ARTICLES_PER_DAY, min_score=QUALITY_THRESHOLD)
+    return select_quality_articles(candidates, max_count=max_count, min_score=QUALITY_THRESHOLD)
 
 
 def extract_full_text(url: str, fallback: str = "") -> str:

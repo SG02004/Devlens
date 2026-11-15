@@ -31,6 +31,9 @@ class Article(Base):
 
     summary: Mapped[str] = mapped_column(Text, nullable=True)
     why_it_matters: Mapped[str] = mapped_column(Text, nullable=True)
+    deep_dive: Mapped[str] = mapped_column(Text, nullable=True)
+    code_snippet: Mapped[str] = mapped_column(Text, nullable=True)
+    full_content: Mapped[str] = mapped_column(Text, nullable=True)
     key_takeaways: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     skills_extracted: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 

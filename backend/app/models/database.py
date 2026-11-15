@@ -57,9 +57,12 @@ from sqlalchemy import inspect, text
 
 def _ensure_columns(sync_conn):
     """Idempotently adds Phase 2/3 columns to existing tables if missing and syncs upvotes."""
-    if "sqlite" not in db_url:
+    if sync_conn.dialect.name != "sqlite":
         sync_conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'user'"))
         sync_conn.execute(text("ALTER TABLE articles ADD COLUMN IF NOT EXISTS readability_score FLOAT NOT NULL DEFAULT 0.0"))
+        sync_conn.execute(text("ALTER TABLE articles ADD COLUMN IF NOT EXISTS deep_dive TEXT NULL"))
+        sync_conn.execute(text("ALTER TABLE articles ADD COLUMN IF NOT EXISTS code_snippet TEXT NULL"))
+        sync_conn.execute(text("ALTER TABLE articles ADD COLUMN IF NOT EXISTS full_content TEXT NULL"))
         sync_conn.execute(text("ALTER TABLE read_events ADD COLUMN IF NOT EXISTS is_upvoted BOOLEAN NOT NULL DEFAULT FALSE"))
         sync_conn.execute(text(
             "UPDATE articles SET upvotes = (SELECT COUNT(*) FROM read_events WHERE read_events.article_id = articles.id AND read_events.is_upvoted = TRUE)"
@@ -76,6 +79,12 @@ def _ensure_columns(sync_conn):
         art_cols = {c["name"] for c in inspector.get_columns("articles")}
         if "readability_score" not in art_cols:
             sync_conn.execute(text("ALTER TABLE articles ADD COLUMN readability_score FLOAT NOT NULL DEFAULT 0.0"))
+        if "deep_dive" not in art_cols:
+            sync_conn.execute(text("ALTER TABLE articles ADD COLUMN deep_dive TEXT NULL"))
+        if "code_snippet" not in art_cols:
+            sync_conn.execute(text("ALTER TABLE articles ADD COLUMN code_snippet TEXT NULL"))
+        if "full_content" not in art_cols:
+            sync_conn.execute(text("ALTER TABLE articles ADD COLUMN full_content TEXT NULL"))
     if "read_events" in tables:
         re_cols = {c["name"] for c in inspector.get_columns("read_events")}
         if "is_upvoted" not in re_cols:
@@ -87,6 +96,7 @@ def _ensure_columns(sync_conn):
 
 async def init_db():
     """Initializes and creates all database tables and ensures default admin exists."""
+    import app.models  # Ensures all model classes are registered on Base.metadata
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(_ensure_columns)

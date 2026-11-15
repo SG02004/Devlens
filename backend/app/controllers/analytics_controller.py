@@ -21,6 +21,7 @@ from app.services.fetcher import CATEGORY_FEEDS
 from app.services.personalizer import READ_CUTOFF, _ensure_utc
 from app.utils.security import get_current_user
 from app.views.article_views import ArticleResponse
+from app.services.summariser import sanitize_skills
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
@@ -117,9 +118,8 @@ async def get_my_analytics(
                 diff = art.difficulty if art.difficulty in difficulty_counts else "Intermediate"
                 difficulty_counts[diff] += 1
 
-                for s in (art.skills_extracted or []):
-                    if s and isinstance(s, str) and s.strip():
-                        skill_counts[s.strip()] += 1
+                for s in sanitize_skills(art.skills_extracted or []):
+                    skill_counts[s] += 1
 
     current_streak, longest_streak = _compute_streaks(set(day_counts.keys()), today_utc)
 

@@ -17,6 +17,9 @@ class ArticleResponse(BaseModel):
     difficulty: str = "Intermediate"
     summary: Optional[str] = None
     why_it_matters: Optional[str] = Field(None, alias="whyItMatters")
+    deep_dive: Optional[str] = Field(None, alias="deepDive")
+    code_snippet: Optional[str] = Field(None, alias="codeSnippet")
+    full_content: Optional[str] = Field(None, alias="fullContent")
     key_takeaways: List[str] = Field(default_factory=list, alias="keyTakeaways")
     skills_extracted: List[str] = Field(default_factory=list, alias="skillsExtracted")
     upvotes: int = 0
@@ -54,6 +57,9 @@ class ArticleResponse(BaseModel):
             difficulty=article.difficulty,
             summary=article.summary,
             why_it_matters=article.why_it_matters,
+            deep_dive=getattr(article, "deep_dive", None),
+            code_snippet=getattr(article, "code_snippet", None),
+            full_content=getattr(article, "full_content", None),
             key_takeaways=article.key_takeaways or [],
             skills_extracted=article.skills_extracted or [],
             upvotes=article.upvotes,
@@ -79,3 +85,27 @@ class SyncResponse(BaseModel):
     articles_fetched: int
     articles_added: int
     errors: List[str] = []
+
+
+class SyncRunResponse(BaseModel):
+    id: str
+    started_at: datetime = Field(alias="startedAt")
+    finished_at: datetime = Field(alias="finishedAt")
+    category: Optional[str] = None
+    articles_fetched: int = Field(0, alias="articlesFetched")
+    articles_added: int = Field(0, alias="articlesAdded")
+    errors: List[str] = []
+    status: str
+    created_at: datetime = Field(alias="createdAt")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        from_attributes=True,
+    )
+
+
+class SyncRunsListResponse(BaseModel):
+    runs: List[SyncRunResponse]
+    total: int
+    limit: int
+    skip: int

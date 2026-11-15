@@ -67,9 +67,9 @@ class UserResponse(BaseModel):
     email: str
     name: Optional[str] = None
     role: str = "user"
-    institution: Optional[str] = "Full-Stack & Systems Engineering"
-    program: Optional[str] = "Senior Developer"
-    batch: Optional[str] = "Active Member"
+    institution: Optional[str] = ""
+    program: Optional[str] = ""
+    batch: Optional[str] = ""
     supervisor: Optional[str] = ""
     selectedCategories: List[str]
     readCount: int = 0
@@ -86,9 +86,9 @@ class UserResponse(BaseModel):
             email=user.email,
             name=user.name or user.username,
             role=getattr(user, "role", "user"),
-            institution=user.institution or "Full-Stack & Systems Engineering",
-            program=user.program or "Senior Developer",
-            batch=user.batch or "Active Member",
+            institution=user.institution or "",
+            program=user.program or "",
+            batch=user.batch or "",
             supervisor=user.supervisor or "",
             selectedCategories=user.selected_categories or [],
             readCount=user.read_count,

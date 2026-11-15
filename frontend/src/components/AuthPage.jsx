@@ -8,13 +8,12 @@ export const AuthPage = ({
   onLoginSuccess,
   theme = "dark",
   onToggleTheme,
-  palette = "new",
-  onTogglePalette,
 }) => {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -75,6 +74,7 @@ export const AuthPage = ({
     setErrorMessage(null);
 
     const targetName = name.trim();
+    const targetUsername = username.trim().toLowerCase();
     const targetEmail = email.trim();
 
     if (!targetName) {
@@ -98,6 +98,7 @@ export const AuthPage = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: targetName,
+          username: targetUsername || undefined,
           email: targetEmail,
           password,
         }),
@@ -127,20 +128,9 @@ export const AuthPage = ({
 
   return (
     <div className="relative min-h-[calc(100vh-4rem)] flex flex-col justify-center py-4 sm:py-10 px-1 sm:px-4">
-      {/* Top Floating Controls: Dark / Light Mode & Palette Switch */}
+      {/* Top Floating Controls: Dark / Light Mode */}
       {onToggleTheme && (
         <div className="flex justify-end gap-2 mb-4 sm:mb-0 sm:absolute sm:top-2 sm:right-6 z-20">
-          {onTogglePalette && (
-            <button
-              id="btn-palette-toggle-auth"
-              type="button"
-              onClick={onTogglePalette}
-              className="border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[#111113] px-3 sm:px-3.5 py-1.5 text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer shadow-sm"
-              title={palette === "new" ? "Fallback to Classic Scheme" : "Switch to New Scheme"}
-            >
-              <span>{palette === "new" ? "CLASSIC SCHEME" : "NEW SCHEME"}</span>
-            </button>
-          )}
           <button
             id="btn-theme-toggle-auth"
             type="button"
@@ -166,13 +156,11 @@ export const AuthPage = ({
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 sm:gap-12 lg:gap-16 items-center">
         {/* Left Section: Display typography */}
         <section className="space-y-4 sm:space-y-6 text-left">
-          <div className="meta-tag">Daily Tech Reads & Guides</div>
-
           <h1 className="font-display text-3xl sm:text-6xl lg:text-8xl leading-[0.95] sm:leading-[0.9] tracking-[-0.04em] text-[var(--ink)] m-0">
             Daily technical stories curated.
           </h1>
 
-          <p className="font-mono text-xs sm:text-base text-[var(--ink-muted)] leading-relaxed max-w-xl">
+          <p className="font-sans text-sm sm:text-base text-[var(--ink-muted)] leading-relaxed max-w-xl text-pretty">
             Curated articles, practical guides, topics tailored to your interests, and key takeaways to help you learn every day.
           </p>
 
@@ -228,31 +216,44 @@ export const AuthPage = ({
 
           <form onSubmit={mode === "login" ? handleLogin : handleSignup} className="space-y-6">
             {mode === "signup" && (
-              <div className="input-group">
-                <label className="block text-[0.65rem] tracking-[0.2em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
-                  Full Name
-                </label>
-                <input
-                  id="input-name"
-                  type="text"
-                  required
-                  placeholder="your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input-underlined"
-                />
-              </div>
+              <>
+                <div className="input-group">
+                  <label className="block text-xs tracking-[0.16em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
+                    Full Name
+                  </label>
+                  <input
+                    id="input-name"
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input-underlined"
+                  />
+                </div>
+
+                <div className="input-group">
+                  <label className="block text-xs tracking-[0.16em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
+                    Username <span className="opacity-60 lowercase font-normal">(optional)</span>
+                  </label>
+                  <input
+                    id="input-username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="input-underlined"
+                  />
+                </div>
+              </>
             )}
 
             <div className="input-group">
-              <label className="block text-[0.65rem] tracking-[0.2em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
+              <label className="block text-xs tracking-[0.16em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
                 Email Address
               </label>
               <input
                 id="input-email"
                 type={mode === "signup" ? "email" : "text"}
                 required
-                placeholder={mode === "signup" ? "your gmail" : "name@gmail.com or username"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-underlined"
@@ -260,15 +261,14 @@ export const AuthPage = ({
             </div>
 
             <div className="input-group relative">
-              <label className="block text-[0.65rem] tracking-[0.2em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
-                Password
+              <label className="block text-xs tracking-[0.16em] uppercase mb-2 text-[var(--ink-muted)] font-mono font-bold">
+                Password {mode === "signup" && <span className="opacity-60 lowercase font-normal">(min 8 characters)</span>}
               </label>
               <input
                 id="input-password"
                 type={showPassword ? "text" : "password"}
                 required
                 maxLength={72}
-                placeholder="•••••••• (min 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-underlined pr-10"

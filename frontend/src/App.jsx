@@ -9,6 +9,7 @@ import { ArticleFormModal } from "./components/ArticleFormModal";
 import { ArticleModal } from "./components/ArticleModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { AnalyticsBoard } from "./components/AnalyticsBoard";
+import { TrendingReposView } from "./views/TrendingReposView";
 import { INITIAL_ARTICLES, INITIAL_USER_PROFILE } from "./data/mockDatabase";
 import { X } from "lucide-react";
 
@@ -28,32 +29,26 @@ export default function App() {
   const [editingArticle, setEditingArticle] = useState(null);
   const [activeDetailArticle, setActiveDetailArticle] = useState(null);
 
+  useEffect(() => {
+    if (activeTab === "viva") {
+      setActiveTab("feed");
+    }
+  }, [activeTab]);
+
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("devlens.theme");
     return saved === "light" ? "light" : "dark";
   });
 
-  const [palette, setPalette] = useState(() => {
-    const saved = localStorage.getItem("devlens.palette");
-    return saved === "classic" ? "classic" : "new";
-  });
-
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("devlens.theme", theme);
+    document.documentElement.removeAttribute("data-palette");
+    localStorage.removeItem("devlens.palette");
   }, [theme]);
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-palette", palette);
-    localStorage.setItem("devlens.palette", palette);
-  }, [palette]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
-  const togglePalette = () => {
-    setPalette((prev) => (prev === "new" ? "classic" : "new"));
   };
 
   // Fetch initial articles & profile from server on mount
@@ -378,12 +373,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col font-mono selection:bg-[var(--accent)] selection:text-[#111113] transition-colors duration-200">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col font-sans selection:bg-[var(--accent)] selection:text-[#111113] transition-colors duration-200">
       {/* Floating Notification Toast */}
       {notification && (
         <div
           id="system-notification-toast"
-          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-50 border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] shadow-2xl px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up font-mono"
+          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-[110] border-2 border-[var(--ink)] bg-[var(--bg-surface)] text-[var(--ink)] shadow-2xl px-4 py-3 text-xs flex items-center gap-3 animate-fade-in-up font-mono"
         >
           <span className="w-2.5 h-2.5 bg-[var(--accent)] animate-pulse shrink-0" />
           <span className="font-bold uppercase tracking-wider text-[11px] text-[var(--accent)] shrink-0">[SYSTEM]:</span>
@@ -408,8 +403,6 @@ export default function App() {
           onLogout={handleLogout}
           theme={theme}
           onToggleTheme={toggleTheme}
-          palette={palette}
-          onTogglePalette={togglePalette}
         />
       )}
 
@@ -420,8 +413,6 @@ export default function App() {
             onLoginSuccess={handleLoginSuccess}
             theme={theme}
             onToggleTheme={toggleTheme}
-            palette={palette}
-            onTogglePalette={togglePalette}
           />
         ) : activeTab === "admin" ? (
           <AdminPanel
@@ -437,8 +428,9 @@ export default function App() {
             onToggleRead={handleToggleRead}
             onToggleBookmark={handleToggleBookmark}
             onUpvote={handleUpvote}
-            onTakeQuiz={() => setActiveTab("quiz")}
           />
+        ) : activeTab === "repos" ? (
+          <TrendingReposView userProfile={userProfile} />
         ) : activeTab === "profile" ? (
           <ProfileSection
             userProfile={userProfile}
@@ -456,12 +448,6 @@ export default function App() {
             articles={articles}
             userProfile={userProfile}
             onOpenArticle={setActiveDetailArticle}
-          />
-        ) : activeTab === "quiz" ? (
-          <ComingSoonView
-            title="Technical Verification Quizzes"
-            subtitle="Phase 2 Feature"
-            onReturnToFeed={() => setActiveTab("feed")}
           />
         ) : null}
       </main>
@@ -500,7 +486,6 @@ export default function App() {
         onToggleBookmark={handleToggleBookmark}
         onUpvote={handleUpvote}
         onSelectArticle={setActiveDetailArticle}
-        onTakeQuiz={() => setActiveTab("quiz")}
       />
     </div>
   );

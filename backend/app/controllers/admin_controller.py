@@ -135,11 +135,15 @@ async def fetch_candidates(
         key_takeaways = item.get("key_takeaways", [])
         skills_extracted = item.get("skills_extracted", [])
 
+        deep_dive_text = None
+        code_snippet_text = None
         if ai_summary:
             summary_text = ai_summary.get("summary") or summary_text
             why_it_matters = ai_summary.get("why_it_matters") or why_it_matters
             key_takeaways = ai_summary.get("key_takeaways") or key_takeaways
             skills_extracted = ai_summary.get("skills_extracted") or skills_extracted
+            deep_dive_text = ai_summary.get("deep_dive")
+            code_snippet_text = ai_summary.get("code_or_pattern")
             if readability_score <= 0 and ai_summary.get("difficulty"):
                 difficulty = ai_summary.get("difficulty")
         else:
@@ -166,6 +170,9 @@ async def fetch_candidates(
             "difficulty": difficulty,
             "summary": summary_text,
             "why_it_matters": why_it_matters,
+            "deep_dive": deep_dive_text,
+            "code_snippet": code_snippet_text,
+            "full_content": full_text,
             "key_takeaways": key_takeaways,
             "skills_extracted": skills_extracted,
             "upvotes": item.get("upvotes", 0),
@@ -211,6 +218,9 @@ class ApproveArticleRequest(BaseModel):
     difficulty: str = "Intermediate"
     summary: Optional[str] = None
     why_it_matters: Optional[str] = None
+    deep_dive: Optional[str] = None
+    code_snippet: Optional[str] = None
+    full_content: Optional[str] = None
     key_takeaways: List[str] = []
     skills_extracted: List[str] = []
     upvotes: int = 0
@@ -262,6 +272,9 @@ async def approve_article(
         difficulty=payload.difficulty,
         summary=payload.summary,
         why_it_matters=payload.why_it_matters,
+        deep_dive=payload.deep_dive,
+        code_snippet=payload.code_snippet,
+        full_content=payload.full_content,
         key_takeaways=payload.key_takeaways,
         skills_extracted=payload.skills_extracted,
         upvotes=payload.upvotes,

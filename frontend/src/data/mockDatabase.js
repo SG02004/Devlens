@@ -1,9 +1,9 @@
 export const INITIAL_USER_PROFILE = {
   name: "Alex Dev",
   email: "alex.dev@example.com",
-  institution: "Full-Stack & Systems Engineering",
-  program: "Senior Developer",
-  batch: "Active Member",
+  institution: "",
+  program: "",
+  batch: "",
   supervisor: "",
   selectedCategories: ["artificial-intelligence", "web-development", "cloud-computing", "cyber-security"],
   readCount: 14,
@@ -176,75 +176,3 @@ export const INITIAL_ARTICLES = [
   },
 ];
 
-export const VIVA_DEFENSE_CARDS = [
-  {
-    id: "viva-1",
-    topic: "Architecture & Framework Choice",
-    question: "Why did you choose Python and FastAPI instead of Node.js and Express?",
-    mentorIntent: "Checking if this was an arbitrary switch or guided by an educational, engineering objective.",
-    studentAnswer:
-      "Two key reasons: First, an explicit academic goal is expanding beyond my MERN stack background into Python for AI and data engineering. Second, FastAPI natively provides async/await coroutines matching ASGI standards, strict type validation via Pydantic schemas, and auto-generated interactive OpenAPI docs at /docs with zero boilerplate. In comparison, Node/Express requires manual Swagger configuration and external validators like Joi/Zod.",
-    codeReference: "devlens/backend_fastapi/main.py & routers/auth.py",
-    tags: ["FastAPI", "Python 3.13", "OpenAPI", "Pydantic"],
-  },
-  {
-    id: "viva-2",
-    topic: "Content Ingestion & Integrity",
-    question: "Why self-source from Dev.to, HN, and arXiv instead of using NewsAPI or GNews?",
-    mentorIntent: "Verifying whether the student created genuine algorithmic pipelines or just called a turnkey third-party commercial API.",
-    studentAnswer:
-      "NewsAPI and GNews free tiers strictly prohibit commercial or production deployment in their Terms of Service. Furthermore, calling a pre-packaged news API does not constitute an original AI agent. By self-sourcing directly from Dev.to API, Hacker News Algolia search API, and arXiv Atom XML feeds, DevLens implements an original multi-source ingestion, normalization, and deduplication layer with zero licensing restrictions.",
-    codeReference: "devlens/backend_fastapi/routers/news.py (/sync-live)",
-    tags: ["Self-Sourcing", "Dev.to", "Hacker News", "arXiv", "No ToS Restrictions"],
-  },
-  {
-    id: "viva-3",
-    topic: "AI Agent Formulation",
-    question: "What makes this a 'Custom AI Agent' rather than just an LLM API wrapper?",
-    mentorIntent: "Probing whether LLM prompts are the only logic or if there is original computational orchestration.",
-    studentAnswer:
-      "The Gemini LLM is treated as just one isolated tool in a 6-step agent workflow. The original code lies in the orchestration: (1) Fetch Tool pulls and normalizes multi-source payloads; (2) Classify Tool categorizes and scores difficulty; (3) Summarize Tool extracts takeaways; (4) Skill Extractor parses tech tags; (5) Rank Tool calculates a non-LLM score based on recency decay and user category alignment; (6) Store Tool performs URL hash deduplication and async DB upserts.",
-    codeReference: "devlens/backend_fastapi/routers/ai.py & news.py",
-    tags: ["6-Tool Agent", "Orchestration", "Ranking Algorithm", "Deduplication"],
-  },
-  {
-    id: "viva-4",
-    topic: "Real Machine Learning (NLP)",
-    question: "Is the comprehension quiz generator real Machine Learning or just a prompt?",
-    mentorIntent: "Testing whether the student understands classical NLP feature engineering vs generative AI.",
-    studentAnswer:
-      "It is anchored by classical NLP: before invoking Gemini, we run a TF-IDF (Term Frequency-Inverse Document Frequency) vectorizer from scikit-learn. TF-IDF computes the statistical importance of terms within the article relative to the corpus. The top statistical keywords are injected into Gemini's prompt with temperature=0.1 and strict responseSchema. The LLM is mathematically grounded in those exact extracted tokens, preventing hallucination.",
-    codeReference: "devlens/backend_fastapi/routers/ai.py (/api/ai/quiz) & tfidf.js",
-    tags: ["TF-IDF", "scikit-learn", "Statistical NLP", "Grounded Verification"],
-  },
-  {
-    id: "viva-5",
-    topic: "Database & Dual-Environment Strategy",
-    question: "Why use SQLite locally and PostgreSQL in production? Doesn't that cause drift?",
-    mentorIntent: "Checking database architecture maturity and deployment readiness.",
-    studentAnswer:
-      "Because we use SQLAlchemy 2.0 Async ORM with Alembic migrations, database models and queries are completely decoupled from the underlying dialect. SQLite with aiosqlite requires zero installation locally - creating devlens.db instantly on startup without heavy memory overhead. For production deployment on Supabase or Neon, switching to PostgreSQL requires changing only the DATABASE_URL environment variable; no Python code changes.",
-    codeReference: "devlens/backend_fastapi/database.py & models.py",
-    tags: ["SQLAlchemy 2.0", "aiosqlite", "PostgreSQL", "Alembic Migrations"],
-  },
-  {
-    id: "viva-6",
-    topic: "Anti-Hallucination Triad",
-    question: "How do you guarantee that Gemini summaries and quiz questions do not hallucinate facts?",
-    mentorIntent: "Assessing awareness of LLM failure modes in production technical platforms.",
-    studentAnswer:
-      "DevLens enforces a non-negotiable 3-part anti-hallucination control on all LLM invocations: (1) Temperature locked at 0.1 for near-deterministic output; (2) Grounding system prompt strictly instructing the model to synthesize exclusively from the provided source text; (3) Native responseSchema JSON enforcement so the model cannot produce conversational filler or deviate from required question structures.",
-    codeReference: "devlens/backend_fastapi/routers/ai.py (Gemini config)",
-    tags: ["Temperature 0.1", "responseSchema", "Grounding Prompt", "Reliability"],
-  },
-  {
-    id: "viva-7",
-    topic: "Database Schema Design",
-    question: "Explain the four tables created in Phase 1 and their relationships.",
-    mentorIntent: "Checking relational database fundamentals and schema comprehension.",
-    studentAnswer:
-      "The four tables are: (1) 'users': stores hashed bcrypt passwords, email, and selected category preferences; (2) 'categories': lookup table for engineering disciplines; (3) 'articles': stores self-sourced technical articles with unique URL constraint, source type, summary, and skills; (4) 'read_events': tracks user engagement (which user read which article, timestamp, and quiz scores for personalization).",
-    codeReference: "devlens/backend_fastapi/models.py",
-    tags: ["ORM Models", "Foreign Keys", "Read Events", "Bcrypt"],
-  },
-];

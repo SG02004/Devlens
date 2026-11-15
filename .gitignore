@@ -118,6 +118,8 @@ Desktop.ini
 .agents/
 .claude/
 .gemini/
+.codex/
+.impeccable/
 
 # ------------------------------------------
 # LOCAL DOCUMENTATION

@@ -16,8 +16,6 @@ export const Header = ({
   onLogout,
   theme = "dark",
   onToggleTheme,
-  palette = "new",
-  onTogglePalette,
 }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
@@ -75,6 +73,15 @@ export const Header = ({
               </button>
 
               <button
+                id="tab-nav-repos"
+                type="button"
+                onClick={() => setActiveTab("repos")}
+                className={`nav-tab ${activeTab === "repos" ? "nav-tab-active" : ""}`}
+              >
+                TRENDING REPOS
+              </button>
+
+              <button
                 id="tab-nav-profile"
                 type="button"
                 onClick={() => setActiveTab("profile")}
@@ -91,33 +98,11 @@ export const Header = ({
               >
                 ANALYTICS
               </button>
-
-              <button
-                id="tab-nav-quiz"
-                type="button"
-                onClick={() => setActiveTab("quiz")}
-                className={`nav-tab ${activeTab === "quiz" ? "nav-tab-active" : ""}`}
-              >
-                QUIZ
-              </button>
             </nav>
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Palette Fallback Toggle (New vs Classic) */}
-            {onTogglePalette && (
-              <button
-                id="btn-palette-toggle-header"
-                type="button"
-                onClick={onTogglePalette}
-                className="border border-[var(--ink)]/40 hover:border-[var(--accent)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--accent)] px-2 sm:px-2.5 py-1.5 text-[10px] sm:text-xs font-mono font-bold tracking-wider uppercase transition-all flex items-center gap-1 cursor-pointer shadow-sm"
-                title={palette === "new" ? "Fallback to Classic Scheme" : "Switch to New Scheme"}
-              >
-                <span>{palette === "new" ? "CLASSIC" : "NEW"}</span>
-              </button>
-            )}
-
             {/* Dark / Light Theme Toggle */}
             {onToggleTheme && (
               <button
@@ -237,6 +222,15 @@ export const Header = ({
           </button>
 
           <button
+            id="tab-nav-repos-mobile"
+            type="button"
+            onClick={() => setActiveTab("repos")}
+            className={`nav-tab flex-1 text-center ${activeTab === "repos" ? "nav-tab-active" : ""}`}
+          >
+            REPOS
+          </button>
+
+          <button
             id="tab-nav-profile-mobile"
             type="button"
             onClick={() => setActiveTab("profile")}
@@ -252,15 +246,6 @@ export const Header = ({
             className={`nav-tab flex-1 text-center ${activeTab === "analytics" ? "nav-tab-active" : ""}`}
           >
             ANALYTICS
-          </button>
-
-          <button
-            id="tab-nav-quiz-mobile"
-            type="button"
-            onClick={() => setActiveTab("quiz")}
-            className={`nav-tab flex-1 text-center ${activeTab === "quiz" ? "nav-tab-active" : ""}`}
-          >
-            QUIZ
           </button>
         </nav>
       </div>
