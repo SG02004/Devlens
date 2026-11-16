@@ -1,9 +1,12 @@
 """
-Admin Controller — Phase 2
-Provides 3 endpoints exclusively for admin users:
+Admin Controller — Phase 2 + Phase 3
+Provides endpoints exclusively for admin users:
   GET  /api/admin/stats                     → article counts + daily quota per category
   POST /api/admin/articles/fetch-candidates → fetches 3 scored candidates WITHOUT saving
   POST /api/admin/articles/approve          → saves an approved candidate to the DB
+  GET  /api/admin/users                     → list all registered users
+  PUT  /api/admin/users/{user_id}/role      → promote/demote a user's role
+  GET  /api/admin/analytics                 → platform-wide aggregates
 
 All endpoints require admin JWT (role='admin' in token payload).
 """
@@ -15,12 +18,13 @@ from typing import Optional, List, Dict, Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.database import get_db
 from app.models.article import Article
 from app.models.user import User
+from app.models.read_event import ReadEvent
 from app.utils.security import require_admin
 from app.services.fetcher import (
     fetch_articles_for_category,
@@ -290,4 +294,159 @@ async def approve_article(
     return {
         "message": f"Article '{article.title}' approved and saved successfully.",
         "article_id": article.id,
+    }
+
+
+# ─── GET /api/admin/users ─────────────────────────────────────────────────────
+
+@router.get("/users")
+async def list_users(
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns all registered users ordered by join date descending.
+    """
+    result = await db.execute(
+        select(User).order_by(desc(User.created_at))
+    )
+    users = result.scalars().all()
+
+    return {
+        "users": [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "name": u.name or "",
+                "role": u.role,
+                "read_count": u.read_count,
+                "created_at": u.created_at.isoformat(),
+            }
+            for u in users
+        ]
+    }
+
+
+# ─── PUT /api/admin/users/{user_id}/role ──────────────────────────────────────
+
+VALID_ROLES = {"user", "admin"}
+
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+
+@router.put("/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    payload: UpdateRoleRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Promote or demote a user's role. Admin cannot demote themselves.
+    """
+    if payload.role not in VALID_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid role '{payload.role}'. Must be one of: {sorted(VALID_ROLES)}",
+        )
+
+    if user_id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot change your own role.",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    target = result.scalar_one_or_none()
+
+    if not target:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User '{user_id}' not found.",
+        )
+
+    target.role = payload.role
+    await db.commit()
+    await db.refresh(target)
+
+    return {
+        "message": f"User '{target.username}' role updated to '{payload.role}'.",
+        "user_id": target.id,
+        "new_role": target.role,
+    }
+
+
+# ─── GET /api/admin/analytics ─────────────────────────────────────────────────
+
+@router.get("/analytics")
+async def get_platform_analytics(
+    _admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Platform-wide aggregates: user count, article counts by category,
+    top-read articles, most active users.
+    """
+    # Total users
+    total_users = (await db.execute(select(func.count()).select_from(User))).scalar_one() or 0
+
+    # Total articles
+    total_articles = (await db.execute(select(func.count()).select_from(Article))).scalar_one() or 0
+
+    # Articles per category
+    articles_by_category = []
+    for cat in VALID_CATEGORIES:
+        count = (
+            await db.execute(
+                select(func.count()).select_from(Article).where(Article.category == cat)
+            )
+        ).scalar_one() or 0
+        articles_by_category.append({
+            "category": cat,
+            "label": cat.replace("-", " ").title(),
+            "count": count,
+        })
+
+    # Top 5 articles by upvotes (simple — no join needed)
+    top_articles_result = await db.execute(
+        select(Article.id, Article.title, Article.category, Article.upvotes)
+        .order_by(desc(Article.upvotes))
+        .limit(5)
+    )
+    top_articles = [
+        {
+            "id": row.id,
+            "title": row.title,
+            "category": row.category,
+            "category_label": row.category.replace("-", " ").title(),
+            "upvotes": row.upvotes or 0,
+        }
+        for row in top_articles_result.all()
+    ]
+
+    # Most active users by read_count
+    most_active_result = await db.execute(
+        select(User.username, User.name, User.read_count)
+        .order_by(desc(User.read_count))
+        .limit(5)
+    )
+    most_active_users = [
+        {
+            "username": row.username,
+            "name": row.name or row.username,
+            "read_count": row.read_count or 0,
+        }
+        for row in most_active_result.all()
+    ]
+
+    return {
+        "total_users": total_users,
+        "total_articles": total_articles,
+        "articles_by_category": articles_by_category,
+        "top_articles": top_articles,
+        "most_active_users": most_active_users,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
     }

@@ -13,7 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 
-const CATEGORIES = [
+export const CATEGORIES = [
   { value: "artificial-intelligence", label: "Artificial Intelligence" },
   { value: "web-development", label: "Web Development" },
   { value: "cloud-computing", label: "Cloud Computing" },
@@ -28,7 +28,7 @@ function difficultyColor(d) {
   return "text-yellow-400";
 }
 
-function ReadabilityBadge({ score, difficulty }) {
+export function ReadabilityBadge({ score, difficulty }) {
   const color = difficultyColor(difficulty);
   return (
     <span className={`font-mono text-[9px] font-bold uppercase tracking-widest ${color} flex items-center gap-1`}>
@@ -38,7 +38,7 @@ function ReadabilityBadge({ score, difficulty }) {
   );
 }
 
-function StatCard({ stat }) {
+export function StatCard({ stat }) {
   const pct = stat.daily_auto_cap > 0
     ? Math.round((stat.added_today / stat.daily_auto_cap) * 100)
     : 0;
@@ -63,7 +63,7 @@ function StatCard({ stat }) {
   );
 }
 
-function CandidateCard({ candidate, onApprove, onDiscard, isApproving }) {
+export function CandidateCard({ candidate, onApprove, onDiscard, isApproving }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="border-2 border-[var(--ink)] bg-[var(--bg-surface)] flex flex-col">

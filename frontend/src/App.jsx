@@ -8,6 +8,11 @@ import { CategoryOnboardingModal } from "./components/CategoryOnboardingModal";
 import { ArticleFormModal } from "./components/ArticleFormModal";
 import { ArticleModal } from "./components/ArticleModal";
 import { AdminPanel } from "./components/AdminPanel";
+import { AdminLayout } from "./components/AdminLayout";
+import { AdminOverviewView } from "./components/admin/AdminOverviewView";
+import { AdminCurationView } from "./components/admin/AdminCurationView";
+import { AdminUsersView } from "./components/admin/AdminUsersView";
+import { AdminAnalyticsView } from "./components/admin/AdminAnalyticsView";
 import { AnalyticsBoard } from "./components/AnalyticsBoard";
 import { TrendingReposView } from "./views/TrendingReposView";
 import { INITIAL_ARTICLES, INITIAL_USER_PROFILE } from "./data/mockDatabase";
@@ -16,6 +21,7 @@ import { X } from "lucide-react";
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("feed");
+  const [adminSection, setAdminSection] = useState("overview");
   const [articles, setArticles] = useState(INITIAL_ARTICLES);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
   const [userProfile, setUserProfile] = useState(INITIAL_USER_PROFILE);
@@ -33,7 +39,10 @@ export default function App() {
     if (activeTab === "viva") {
       setActiveTab("feed");
     }
-  }, [activeTab]);
+    if (isAuthenticated && userProfile?.role !== "admin" && activeTab === "admin") {
+      setActiveTab("feed");
+    }
+  }, [activeTab, isAuthenticated, userProfile?.role]);
 
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem("devlens.theme");
@@ -393,8 +402,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Nav Bar (When Authenticated) */}
-      {isAuthenticated && (
+      {/* Top Nav Bar (When Authenticated and NOT Admin) */}
+      {isAuthenticated && userProfile?.role !== "admin" && (
         <Header
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -407,50 +416,63 @@ export default function App() {
       )}
 
       {/* Main Content View */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        {!isAuthenticated ? (
+      {!isAuthenticated ? (
+        <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
           <AuthPage
             onLoginSuccess={handleLoginSuccess}
             theme={theme}
             onToggleTheme={toggleTheme}
           />
-        ) : activeTab === "admin" ? (
-          <AdminPanel
-            userProfile={userProfile}
-            onLogout={handleLogout}
-          />
-        ) : activeTab === "feed" ? (
-          <ArticleFeed
-            articles={articles}
-            isLoading={isLoadingArticles}
-            userProfile={userProfile}
-            onOpenArticle={setActiveDetailArticle}
-            onToggleRead={handleToggleRead}
-            onToggleBookmark={handleToggleBookmark}
-            onUpvote={handleUpvote}
-          />
-        ) : activeTab === "repos" ? (
-          <TrendingReposView userProfile={userProfile} />
-        ) : activeTab === "profile" ? (
-          <ProfileSection
-            userProfile={userProfile}
-            onUpdateProfile={handleUpdateProfile}
-            onUpdateCategories={handleUpdateCategories}
-            articles={articles}
-            onCreateArticle={handleCreateArticle}
-            onUpdateArticle={handleUpdateArticle}
-            onDeleteArticle={handleDeleteArticle}
-            onLogout={handleLogout}
-          />
-        ) : activeTab === "analytics" ? (
-          <AnalyticsBoard
-            username={userProfile?.name || userProfile?.username}
-            articles={articles}
-            userProfile={userProfile}
-            onOpenArticle={setActiveDetailArticle}
-          />
-        ) : null}
-      </main>
+        </main>
+      ) : userProfile?.role === "admin" ? (
+        <AdminLayout
+          activeSection={adminSection}
+          onSectionChange={setAdminSection}
+          userProfile={userProfile}
+          onLogout={handleLogout}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        >
+          {adminSection === "overview" && <AdminOverviewView />}
+          {adminSection === "curation" && <AdminCurationView />}
+          {adminSection === "users" && <AdminUsersView currentUserId={userProfile?.id} />}
+          {adminSection === "analytics" && <AdminAnalyticsView />}
+        </AdminLayout>
+      ) : (
+        <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+          {activeTab === "feed" ? (
+            <ArticleFeed
+              articles={articles}
+              isLoading={isLoadingArticles}
+              userProfile={userProfile}
+              onOpenArticle={setActiveDetailArticle}
+              onToggleRead={handleToggleRead}
+              onToggleBookmark={handleToggleBookmark}
+              onUpvote={handleUpvote}
+            />
+          ) : activeTab === "repos" ? (
+            <TrendingReposView userProfile={userProfile} />
+          ) : activeTab === "profile" ? (
+            <ProfileSection
+              userProfile={userProfile}
+              onUpdateProfile={handleUpdateProfile}
+              onUpdateCategories={handleUpdateCategories}
+              articles={articles}
+              onCreateArticle={handleCreateArticle}
+              onUpdateArticle={handleUpdateArticle}
+              onDeleteArticle={handleDeleteArticle}
+              onLogout={handleLogout}
+            />
+          ) : activeTab === "analytics" ? (
+            <AnalyticsBoard
+              username={userProfile?.name || userProfile?.username}
+              articles={articles}
+              userProfile={userProfile}
+              onOpenArticle={setActiveDetailArticle}
+            />
+          ) : null}
+        </main>
+      )}
 
       {/* Category Selection Onboarding Modal (Shown after user creates account) */}
       {showCategoryOnboarding && (
