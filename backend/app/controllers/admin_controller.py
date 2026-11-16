@@ -421,7 +421,7 @@ async def get_platform_analytics(
             "id": row.id,
             "title": row.title,
             "category": row.category,
-            "category_label": row.category.replace("-", " ").title(),
+            "category_label": (row.category.replace("-", " ").title()) if row.category else "General",
             "upvotes": row.upvotes or 0,
         }
         for row in top_articles_result.all()

@@ -52,7 +52,7 @@ async def has_today_6am_sync_run(db: AsyncSession, now: Optional[datetime] = Non
 
     query = select(func.count(SyncRun.id)).where(
         SyncRun.started_at >= target_6am_utc,
-        SyncRun.errors_count == 0,
+        SyncRun.status == "success",
     )
     count = (await db.execute(query)).scalar_one() or 0
     return count > 0

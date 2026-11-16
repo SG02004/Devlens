@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Users, Loader2, AlertCircle, Shield, ShieldOff, UserCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Users, Loader2, AlertCircle, Shield, ShieldOff, UserCheck, RefreshCw } from "lucide-react";
 
 function RoleBadge({ role }) {
   const isAdmin = role === "admin";
@@ -25,28 +25,38 @@ export function AdminUsersView({ currentUserId }) {
   const [notification, setNotification] = useState(null);
 
   const token = localStorage.getItem("devlens.auth_token");
-  const authHeaders = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const getAuthHeaders = useCallback(() => {
+    return {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "Content-Type": "application/json",
+    };
+  }, [token]);
 
   const notify = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4000);
   };
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/admin/users", { headers: authHeaders });
-        if (!res.ok) throw new Error("Failed to load users");
-        const data = await res.json();
-        setUsers(data.users || []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/users", { headers: getAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || `Failed to load users (${res.status})`);
       }
-    })();
-  }, []); // eslint-disable-line
+      setUsers(data.users || []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
 
   const handleRoleToggle = async (user) => {
     const newRole = user.role === "admin" ? "user" : "admin";
@@ -54,10 +64,10 @@ export function AdminUsersView({ currentUserId }) {
     try {
       const res = await fetch(`/api/admin/users/${user.id}/role`, {
         method: "PUT",
-        headers: authHeaders,
+        headers: getAuthHeaders(),
         body: JSON.stringify({ role: newRole }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "Role update failed");
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u))
@@ -81,9 +91,21 @@ export function AdminUsersView({ currentUserId }) {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 border border-red-500/40 bg-red-500/5 px-4 py-3 text-xs text-red-400 font-mono">
-        <AlertCircle className="w-4 h-4 shrink-0" />
-        {error}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border border-red-500/40 bg-red-500/5 px-4 py-3 text-xs text-red-400 font-mono">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={loadUsers}
+            className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[var(--accent)] hover:underline cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }

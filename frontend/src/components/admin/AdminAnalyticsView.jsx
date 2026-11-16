@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { TrendingUp, Loader2, AlertCircle, Users, FileText, Flame, Award } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { TrendingUp, Loader2, AlertCircle, Users, FileText, Flame, Award, RefreshCw } from "lucide-react";
 
 function KpiCard({ icon: Icon, label, value }) {
   return (
@@ -41,23 +41,32 @@ export function AdminAnalyticsView() {
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("devlens.auth_token");
-  const authHeaders = { Authorization: `Bearer ${token}` };
+  const getAuthHeaders = useCallback(() => {
+    return {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  }, [token]);
+
+  const loadAnalytics = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/analytics", { headers: getAuthHeaders() });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json.detail || `Failed to load analytics (${res.status})`);
+      }
+      setData(json);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/admin/analytics", { headers: authHeaders });
-        if (!res.ok) throw new Error("Failed to load analytics");
-        const json = await res.json();
-        setData(json);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []); // eslint-disable-line
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   if (loading) {
     return (
@@ -70,29 +79,51 @@ export function AdminAnalyticsView() {
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 border border-red-500/40 bg-red-500/5 px-4 py-3 text-xs text-red-400 font-mono">
-        <AlertCircle className="w-4 h-4 shrink-0" />
-        {error}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border border-red-500/40 bg-red-500/5 px-4 py-3 text-xs text-red-400 font-mono">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+          <button
+            type="button"
+            onClick={loadAnalytics}
+            className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[var(--accent)] hover:underline cursor-pointer"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
-  const maxCategoryCount = Math.max(...(data.articles_by_category || []).map((c) => c.count), 1);
+  const maxCategoryCount = Math.max(...(data?.articles_by_category || []).map((c) => c.count), 1);
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
-        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink)]">
-          Platform Analytics
-        </h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-[var(--accent)]" />
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink)]">
+            Platform Analytics
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={loadAnalytics}
+          className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-[var(--ink-muted)] hover:text-[var(--accent)] transition-colors cursor-pointer"
+        >
+          <RefreshCw className="w-3 h-3" />
+          Refresh
+        </button>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <KpiCard icon={Users} label="Total Users" value={data.total_users} />
-        <KpiCard icon={FileText} label="Total Articles" value={data.total_articles} />
+        <KpiCard icon={Users} label="Total Users" value={data?.total_users ?? 0} />
+        <KpiCard icon={FileText} label="Total Articles" value={data?.total_articles ?? 0} />
       </div>
 
       {/* Articles by Category */}
@@ -101,7 +132,7 @@ export function AdminAnalyticsView() {
           Articles by Category
         </h3>
         <div className="space-y-3">
-          {(data.articles_by_category || []).map((cat) => (
+          {(data?.articles_by_category || []).map((cat) => (
             <CategoryBar
               key={cat.category}
               label={cat.label}
@@ -122,10 +153,10 @@ export function AdminAnalyticsView() {
             </h3>
           </div>
           <div className="space-y-2">
-            {data.top_articles?.length === 0 && (
+            {(!data?.top_articles || data.top_articles.length === 0) && (
               <p className="font-mono text-[10px] text-[var(--ink-muted)] italic">No articles yet.</p>
             )}
-            {(data.top_articles || []).map((article, i) => (
+            {(data?.top_articles || []).map((article, i) => (
               <div
                 key={article.id}
                 className="flex items-start gap-3 border border-[var(--border-dim)] bg-[var(--bg-surface)] px-3 py-2.5"
@@ -158,10 +189,10 @@ export function AdminAnalyticsView() {
             </h3>
           </div>
           <div className="space-y-2">
-            {data.most_active_users?.length === 0 && (
+            {(!data?.most_active_users || data.most_active_users.length === 0) && (
               <p className="font-mono text-[10px] text-[var(--ink-muted)] italic">No activity yet.</p>
             )}
-            {(data.most_active_users || []).map((user, i) => (
+            {(data?.most_active_users || []).map((user, i) => (
               <div
                 key={user.username}
                 className="flex items-center gap-3 border border-[var(--border-dim)] bg-[var(--bg-surface)] px-3 py-2.5"
