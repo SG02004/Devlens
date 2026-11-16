@@ -19,12 +19,40 @@ import { INITIAL_ARTICLES, INITIAL_USER_PROFILE } from "./data/mockDatabase";
 import { X } from "lucide-react";
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState("feed");
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem("devlens.auth_token");
+  });
+  const [userProfile, setUserProfile] = useState(() => {
+    const saved = localStorage.getItem("devlens.user_profile");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          return {
+            ...INITIAL_USER_PROFILE,
+            ...parsed,
+            selectedCategories: parsed.selectedCategories || parsed.selected_categories || INITIAL_USER_PROFILE.selectedCategories,
+          };
+        }
+      } catch {
+        // ignore JSON parse error
+      }
+    }
+    return INITIAL_USER_PROFILE;
+  });
+  const [activeTab, setActiveTab] = useState(() => {
+    const saved = localStorage.getItem("devlens.user_profile");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed?.role === "admin") return "admin";
+      } catch {}
+    }
+    return "feed";
+  });
   const [adminSection, setAdminSection] = useState("overview");
   const [articles, setArticles] = useState(INITIAL_ARTICLES);
   const [isLoadingArticles, setIsLoadingArticles] = useState(true);
-  const [userProfile, setUserProfile] = useState(INITIAL_USER_PROFILE);
   const [notification, setNotification] = useState(null);
 
   // Category onboarding state (triggered after signup)
@@ -60,50 +88,76 @@ export default function App() {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
-  // Fetch initial articles & profile from server on mount
+  // Restore & verify authenticated session on mount (fast, independent)
   useEffect(() => {
-    async function loadInitialData() {
-      setIsLoadingArticles(true);
+    async function verifySession() {
+      const token = localStorage.getItem("devlens.auth_token");
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
+
       try {
-        const token = localStorage.getItem("devlens.auth_token");
-        const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
-
-        const [articlesRes, profileRes] = await Promise.all([
-          fetch("/api/articles?limit=150", { headers: authHeaders }),
-          token ? fetch("/api/auth/me", { headers: authHeaders }) : Promise.resolve({ ok: false }),
-        ]);
-
-        if (articlesRes.ok) {
-          const data = await articlesRes.json();
-          const items = data.articles || data.items || (Array.isArray(data) ? data : []);
-          if (Array.isArray(items) && items.length > 0) {
-            setArticles(items);
-          }
-        }
+        const profileRes = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           const user = profileData.user || profileData;
           if (user && user.email) {
-            setUserProfile((prev) => ({
-              ...prev,
-              ...user,
-              selectedCategories: user.selectedCategories || user.selected_categories || prev.selectedCategories,
-            }));
+            setUserProfile((prev) => {
+              const updated = {
+                ...prev,
+                ...user,
+                selectedCategories: user.selectedCategories || user.selected_categories || prev.selectedCategories,
+              };
+              localStorage.setItem("devlens.user_profile", JSON.stringify(updated));
+              return updated;
+            });
             setIsAuthenticated(true);
-            // Restore admin panel on page refresh for admin users
             if (user.role === "admin") {
               setActiveTab("admin");
             }
           }
+        } else if (profileRes.status === 401 || profileRes.status === 403) {
+          // Token expired or revoked
+          localStorage.removeItem("devlens.auth_token");
+          localStorage.removeItem("devlens.user_profile");
+          setIsAuthenticated(false);
+          triggerNotification("Your session has expired. Please sign in again.");
         }
       } catch (err) {
-        console.warn("Initial API load using fallback data:", err);
+        console.warn("Session verification warning (retaining cached auth):", err);
+      }
+    }
+
+    verifySession();
+  }, []);
+
+  // Fetch initial articles on mount
+  useEffect(() => {
+    async function loadArticles() {
+      setIsLoadingArticles(true);
+      try {
+        const token = localStorage.getItem("devlens.auth_token");
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch("/api/articles?limit=150", { headers });
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.articles || data.items || (Array.isArray(data) ? data : []);
+          if (Array.isArray(items) && items.length > 0) {
+            setArticles(items);
+          }
+        }
+      } catch (err) {
+        console.warn("Articles load failed:", err);
       } finally {
         setIsLoadingArticles(false);
       }
     }
-    loadInitialData();
+
+    loadArticles();
   }, []);
 
   const triggerNotification = (msg) => {
@@ -346,10 +400,9 @@ export default function App() {
 
   // Auth flow: Handle login or signup
   const handleLoginSuccess = (userData, isNewSignup = false) => {
-    setUserProfile((prev) => ({
-      ...prev,
-      ...userData,
-    }));
+    const updated = { ...userProfile, ...userData };
+    setUserProfile(updated);
+    localStorage.setItem("devlens.user_profile", JSON.stringify(updated));
     setIsAuthenticated(true);
     refreshArticlesFeed();
 
@@ -377,6 +430,7 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("devlens.auth_token");
+    localStorage.removeItem("devlens.user_profile");
     setIsAuthenticated(false);
     triggerNotification("Signed out successfully.");
   };

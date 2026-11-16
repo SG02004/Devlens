@@ -113,6 +113,7 @@ export const AuthPage = ({
         onLoginSuccess({
           name: data.user?.name || targetName,
           email: data.user?.email || targetEmail,
+          role: data.user?.role || "user",
           selectedCategories: data.user?.selectedCategories || data.user?.selected_categories || [],
         }, true);
       } else {
