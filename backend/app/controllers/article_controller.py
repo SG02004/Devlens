@@ -332,7 +332,14 @@ async def upvote_article(
     Toggles the authenticated user's upvote for an article (max 1 upvote per user).
     Recomputes the exact upvote count from ReadEvent so counts are always accurate.
     """
-    query = select(Article).where(Article.id == article_id)
+    # Serialize against account removal before locking the article's vote total.
+    user_id = await db.scalar(
+        select(User.id).where(User.id == current_user.id).with_for_update()
+    )
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+
+    query = select(Article).where(Article.id == article_id).with_for_update()
     result = await db.execute(query)
     article = result.scalar_one_or_none()
 

@@ -6,6 +6,7 @@ Provides endpoints exclusively for admin users:
   POST /api/admin/articles/approve          → saves an approved candidate to the DB
   GET  /api/admin/users                     → list all registered users
   PUT  /api/admin/users/{user_id}/role      → promote/demote a user's role
+  DELETE /api/admin/users/{user_id}         → permanently remove a regular user
   GET  /api/admin/analytics                 → platform-wide aggregates
 
 All endpoints require admin JWT (role='admin' in token payload).
@@ -16,9 +17,9 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.database import get_db
@@ -299,9 +300,20 @@ async def approve_article(
 
 # ─── GET /api/admin/users ─────────────────────────────────────────────────────
 
+def can_remove_user(user: User, admin: User) -> bool:
+    # Database initialization recognizes the built-in account by either identifier.
+    return (
+        admin.role == "admin"
+        and user.id != admin.id
+        and user.role == "user"
+        and user.email != "admin@devlens.local"
+        and user.username != "devlens_admin"
+    )
+
+
 @router.get("/users")
 async def list_users(
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -320,6 +332,7 @@ async def list_users(
                 "email": u.email,
                 "name": u.name or "",
                 "role": u.role,
+                "can_remove": can_remove_user(u, admin),
                 "read_count": u.read_count,
                 "created_at": u.created_at.isoformat(),
             }
@@ -359,8 +372,7 @@ async def update_user_role(
             detail="You cannot change your own role.",
         )
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    target = result.scalar_one_or_none()
+    target = await db.scalar(select(User).where(User.id == user_id).with_for_update())
 
     if not target:
         raise HTTPException(
@@ -369,14 +381,55 @@ async def update_user_role(
         )
 
     target.role = payload.role
-    await db.commit()
-    await db.refresh(target)
-
-    return {
+    response = {
         "message": f"User '{target.username}' role updated to '{payload.role}'.",
         "user_id": target.id,
         "new_role": target.role,
     }
+    await db.commit()
+    return response
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_user(
+    user_id: str,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    if admin.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required.")
+
+    target = await db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if target is None:
+        raise HTTPException(status_code=404, detail="User is already gone.")
+    if not can_remove_user(target, admin):
+        raise HTTPException(status_code=403, detail="This account is protected.")
+
+    voted_articles = select(ReadEvent.article_id).where(
+        ReadEvent.user_id == user_id, ReadEvent.is_upvoted.is_(True)
+    )
+    # Match the upvote handler's user-then-article lock order.
+    article_ids = (await db.scalars(
+        select(Article.id)
+        .where(Article.id.in_(voted_articles))
+        .order_by(Article.id)
+        .with_for_update()
+    )).all()
+
+    await db.execute(delete(ReadEvent).where(ReadEvent.user_id == user_id))
+    await db.delete(target)
+    if article_ids:
+        remaining_votes = (
+            select(func.count())
+            .select_from(ReadEvent)
+            .where(ReadEvent.article_id == Article.id, ReadEvent.is_upvoted.is_(True))
+            .scalar_subquery()
+        )
+        await db.execute(
+            update(Article).where(Article.id.in_(article_ids)).values(upvotes=remaining_votes)
+        )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # ─── GET /api/admin/analytics ─────────────────────────────────────────────────

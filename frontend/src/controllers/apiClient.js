@@ -72,7 +72,9 @@ export async function request(endpoint, options = {}) {
     } catch {
       // Non-JSON error body fallback
     }
-    throw new Error(errorDetail || `Request failed with status ${response.status}`);
+    const error = new Error(errorDetail || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {
