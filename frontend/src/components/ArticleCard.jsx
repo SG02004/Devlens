@@ -133,6 +133,24 @@ export const ArticleCard = ({
         </button>
 
         <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
+          {/* Technical Quiz Button */}
+          {onTakeQuiz && (
+            <button
+              id={`btn-article-quiz-${article.id}`}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTakeQuiz(article);
+              }}
+              className="border px-2 sm:px-2.5 py-1 text-[10px] font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer shrink-0 border-[var(--ink)]/40 hover:border-[var(--accent)] hover:text-[var(--accent)] bg-[var(--bg-surface)] text-[var(--ink)]"
+              title="Take technical quiz"
+              aria-label={`Take quiz for ${article.title}`}
+            >
+              <Award className="w-3 h-3 text-[var(--accent)] shrink-0" />
+              <span>QUIZ</span>
+            </button>
+          )}
+
           {/* Public Upvote Counter & Button */}
           {onUpvote && (
             <button

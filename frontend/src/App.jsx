@@ -7,6 +7,7 @@ import { ComingSoonView } from "./components/ComingSoonView";
 import { CategoryOnboardingModal } from "./components/CategoryOnboardingModal";
 import { ArticleFormModal } from "./components/ArticleFormModal";
 import { ArticleModal } from "./components/ArticleModal";
+import { QuizModal } from "./components/QuizModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { AdminLayout } from "./components/AdminLayout";
 import { AdminOverviewView } from "./components/admin/AdminOverviewView";
@@ -62,6 +63,7 @@ export default function App() {
   const [isArticleFormOpen, setIsArticleFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
   const [activeDetailArticle, setActiveDetailArticle] = useState(null);
+  const [activeQuizArticle, setActiveQuizArticle] = useState(null);
 
   useEffect(() => {
     if (activeTab === "viva") {
@@ -503,6 +505,7 @@ export default function App() {
               onToggleRead={handleToggleRead}
               onToggleBookmark={handleToggleBookmark}
               onUpvote={handleUpvote}
+              onTakeQuiz={setActiveQuizArticle}
             />
           ) : activeTab === "repos" ? (
             <TrendingReposView userProfile={userProfile} />
@@ -563,6 +566,15 @@ export default function App() {
         onUpvote={handleUpvote}
         onSelectArticle={setActiveDetailArticle}
       />
+
+      {/* Global Technical Quiz Modal */}
+      {activeQuizArticle && (
+        <QuizModal
+          article={activeQuizArticle}
+          allArticles={articles}
+          onClose={() => setActiveQuizArticle(null)}
+        />
+      )}
     </div>
   );
 }
